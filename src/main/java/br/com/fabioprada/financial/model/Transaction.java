@@ -14,13 +14,13 @@ public class Transaction {
     private Long id;
 
     @Column(nullable = false)
-    private String nome;
+    private String name;
 
     @Column(nullable = false)
-    private BigDecimal valor;
+    private BigDecimal value;
 
     @Column(nullable = false)
-    private LocalDate dataCriacao;
+    private LocalDate creactionDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
