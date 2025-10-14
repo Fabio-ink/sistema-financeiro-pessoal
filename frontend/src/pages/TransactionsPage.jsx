@@ -20,9 +20,19 @@ function TransactionsPage() {
         fetchTransactions();
     }, []);
 
-    const handleSave = () => {
-        setIsModalOpen(false);
-        fetchTransactions();
+    const handleSave = async (transactionData) => {
+        try {
+            if (selectedTransaction) {
+                await api.put(`/transactions/${selectedTransaction.id}`, transactionData);
+            } else {
+                await api.post('/transactions', transactionData);
+            }
+            setIsModalOpen(false);
+            fetchTransactions();
+        } catch (error) {
+            console.error("Error saving transaction:", error);
+            alert("Failed to save transaction. Please check the console for details.");
+        }
     };
 
     const handleDelete = async (id) => {
