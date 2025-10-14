@@ -9,7 +9,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = "http://localhost:5173") // Permite acesso do nosso frontend
 public class TransactionController {
 
     @Autowired
@@ -30,8 +29,8 @@ public class TransactionController {
         return transactionRepository.findById(id)
                 .map(transaction -> {
                     transaction.setName(transactionDetails.getName());
-                    transaction.setValue(transactionDetails.getValue());
-                    transaction.setCreactionDate(transactionDetails.getCreactionDate());
+                    transaction.setAmount(transactionDetails.getAmount());
+                    transaction.setCreationDate(transactionDetails.getCreationDate());
                     transaction.setTransactionType(transactionDetails.getTransactionType());
                     transaction.setCategory(transactionDetails.getCategory());
                     transaction.setOutAccount(transactionDetails.getOutAccount());
