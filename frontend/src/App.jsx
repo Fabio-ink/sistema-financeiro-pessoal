@@ -14,16 +14,19 @@ function App() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen">
-      <nav className="bg-white shadow-md">
+    // APLICA O TEMA ESCURO AQUI
+    <div className="bg-gray-900 text-gray-300 min-h-screen font-sans">
+      
+      {/* NAVEGAÇÃO ESTILIZADA */}
+      <nav className="bg-gray-800 border-b border-gray-700">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            <div className="text-2xl font-bold text-gray-800">MyFinances</div>
-            <div className="flex items-center space-x-8 h-full">
-              <NavLink to="/" className="h-full flex items-center" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Dashboard</NavLink>
-              <NavLink to="/transactions" className="h-full flex items-center" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Transactions</NavLink>
-              <NavLink to="/accounts" className="h-full flex items-center" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Accounts</NavLink>
-              <NavLink to="/categories" className="h-full flex items-center" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Categories</NavLink>
+            <div className="text-xl font-bold text-white">MyFinances</div>
+            <div className="flex items-center space-x-8 text-gray-400">
+              <NavLink to="/" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Dashboard</NavLink>
+              <NavLink to="/transactions" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Transactions</NavLink>
+              <NavLink to="/accounts" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Accounts</NavLink>
+              <NavLink to="/categories" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Categories</NavLink>
             </div>
           </div>
         </div>

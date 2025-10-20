@@ -1,32 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import MonthSummaryCard from '../components/MonthSummaryCard'; // Importamos o novo componente
 
 function DashboardPage() {
-  const [accounts, setAccounts] = useState([]);
-  const [recentTransactions, setRecentTransactions] = useState([]);
-  const [stats, setStats] = useState({ totalIncomes: 0, totalExpenses: 0 });
+  const [Accounts, setAccounts] = useState([]);
+  const [RecentTransactions, setRecentTransactions] = useState([]);
+  
+  // No futuro, estes dados virão da sua API. Por agora, vamos simular.
+  const monthlySummaryData = {
+    previous: { title: "2025-Setembro", totalSpent: 2672.45, totalIncome: 1428.04, plannedBudget: 2500 },
+    current: { title: "2025-Outubro", totalSpent: 1721.28, totalIncome: 33.18, plannedBudget: 1900 },
+    next: { title: "2025-Novembro", totalSpent: 0, totalIncome: 0, plannedBudget: 1900 },
+  };
+
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Busca todas as requisições em paralelo para otimizar
         const [accountsRes, transactionsRes] = await Promise.all([
           api.get('/accounts'),
           api.get('/transactions')
         ]);
         
         setAccounts(accountsRes.data);
-        // Pega as 5 transações mais recentes
         setRecentTransactions(transactionsRes.data.slice(0, 5)); 
-
-        // Calcula estatísticas simples (exemplo)
-        let totalIncomes = 0;
-        let totalExpenses = 0;
-        transactionsRes.data.forEach(t => {
-          if (t.transactionType === 'ENTRADA') totalIncomes += t.amount;
-          if (t.transactionType === 'SAIDA') totalExpenses += t.amount;
-        });
-        setStats({ totalIncomes, totalExpenses });
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -36,58 +33,38 @@ function DashboardPage() {
     fetchData();
   }, []);
 
+  // ... O componente StatCard pode ser removido ou mantido, como preferir ...
+
   return (
     <div className="container mx-auto space-y-8">
-      <h1 className="text-3xl font-bold">Financial Dashboard</h1>
-
-      {/* Seção de Resumo Rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-4 bg-white border rounded shadow-md">
-          <h3 className="text-lg font-semibold text-gray-500">Total Incomes (this month)</h3>
-          <p className="text-2xl font-bold text-green-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalIncomes)}</p>
-        </div>
-        <div className="p-4 bg-white border rounded shadow-md">
-          <h3 className="text-lg font-semibold text-gray-500">Total Expenses (this month)</h3>
-          <p className="text-2xl font-bold text-red-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalExpenses)}</p>
-        </div>
-        <div className="p-4 bg-white border rounded shadow-md">
-          <h3 className="text-lg font-semibold text-gray-500">Final Balance</h3>
-           <p className="text-2xl font-bold text-blue-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalIncomes - stats.totalExpenses)}</p>
+      
+      {/* NOVA SEÇÃO: Resumo de 3 Meses */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4 text-white">Visão de 3 meses</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <MonthSummaryCard {...monthlySummaryData.previous} />
+            <MonthSummaryCard {...monthlySummaryData.current} />
+            <MonthSummaryCard {...monthlySummaryData.next} />
         </div>
       </div>
       
+      {/* O restante do Dashboard continua aqui... */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Coluna da Esquerda: Transações Recentes */}
-        <div className="lg:col-span-2 bg-white p-4 border rounded shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
-          <div className="space-y-4">
-            {recentTransactions.map(t => (
-              <div key={t.id} className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{t.name}</p>
-                  <p className="text-sm text-gray-500">{t.category?.name || 'No Category'}</p>
-                </div>
-                <p className={`font-bold ${t.transactionType === 'SAIDA' ? 'text-red-600' : 'text-green-600'}`}>
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
-                </p>
-              </div>
-            ))}
-          </div>
+        <div className="lg:col-span-2 bg-gray-800 p-6 rounded-lg border border-gray-700">
+          <h2 className="text-xl font-semibold mb-4 text-white">Recent Transactions</h2>
+          {/* ... conteúdo das transações ... */}
         </div>
-
-        {/* Coluna da Direita: Contas */}
-        <div className="lg:col-span-1 bg-white p-4 border rounded shadow-md">
-          <h2 className="text-xl font-semibold mb-4">My Accounts</h2>
-          <div className="space-y-4">
-            {accounts.map(acc => (
-              <div key={acc.id} className="flex justify-between items-center">
-                <p className="font-medium">{acc.name}</p>
-                <p className="text-gray-800">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(acc.currentBalance)}</p>
-              </div>
-            ))}
-          </div>
+        <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg border border-gray-700">
+          <h2 className="text-xl font-semibold mb-4 text-white">My Accounts</h2>
+          {/* ... conteúdo das contas ... */}
         </div>
       </div>
+
+       {/* Futura Seção de Gráficos */}
+       <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+          <h2 className="text-xl font-semibold mb-4 text-white">Fluxo de transações em cada mês</h2>
+          <p className="text-gray-400">(O componente do gráfico de Donut ficará aqui)</p>
+        </div>
     </div>
   );
 }
