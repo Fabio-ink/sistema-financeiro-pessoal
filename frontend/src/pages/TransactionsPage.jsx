@@ -20,9 +20,19 @@ function TransactionsPage() {
         fetchTransactions();
     }, []);
 
-    const handleSave = () => {
-        setIsModalOpen(false);
-        fetchTransactions();
+    const handleSave = async (transactionData) => {
+        try {
+            if (selectedTransaction) {
+                await api.put(`/transactions/${selectedTransaction.id}`, transactionData);
+            } else {
+                await api.post('/transactions', transactionData);
+            }
+            setIsModalOpen(false);
+            fetchTransactions();
+        } catch (error) {
+            console.error("Error saving transaction:", error);
+            alert("Failed to save transaction. Please check the console for details.");
+        }
     };
 
     const handleDelete = async (id) => {
@@ -39,7 +49,7 @@ function TransactionsPage() {
     return (
         <div className="container mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">All Transactions</h1>
+                <h1 className="text-3xl font-bold dark:text-white">All Transactions</h1>
                 <button 
                     onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}
                     className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">
@@ -48,23 +58,23 @@ function TransactionsPage() {
             </div>
 
             {/* Tabela de Transações */}
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 shadow-md rounded">
                 <table className="min-w-full leading-normal">
                     <thead>
                         <tr>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Account</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700"></th>
+                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</th>
+                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Account</th>
+                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700"></th>
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800">
                         {transactions.map(t => (
-                            <tr key={t.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <tr key={t.id} className="dark:bg-gray-800">
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-100 whitespace-no-wrap">{t.name}</p>
+                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.name}</p>
                                 </td>
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
                                     <p className={`whitespace-no-wrap ${t.transactionType === 'SAIDA' ? 'text-red-600' : 'text-green-600'}`}>
@@ -72,19 +82,19 @@ function TransactionsPage() {
                                     </p>
                                 </td>
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-100 whitespace-no-wrap">{t.category?.name || 'N/A'}</p>
+                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.category?.name || 'N/A'}</p>
                                 </td>
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-100 whitespace-no-wrap">{t.outAccount?.name || t.inAccount?.name || 'N/A'}</p>
+                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.outAccount?.name || t.inAccount?.name || 'N/A'}</p>
                                 </td>
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-100 whitespace-no-wrap">{new Date(t.creationDate).toLocaleDateString('pt-BR')}</p>
+                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{new Date(t.creationDate).toLocaleDateString('pt-BR')}</p>
                                 </td>
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm text-right">
                                     <button 
                                         onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}
-                                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4">Edit</button>
-                                    <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 mr-4">Edit</button>
+                                    <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600">Delete</button>
                                 </td>
                             </tr>
                         ))}

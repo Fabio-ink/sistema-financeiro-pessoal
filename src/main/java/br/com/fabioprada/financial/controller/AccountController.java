@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounts")
-@CrossOrigin(origins = "http://localhost:5173") // Permite acesso do nosso frontend
+@CrossOrigin(origins = "http://localhost:5174") // Permite acesso do nosso frontend
 public class AccountController {
 
     @Autowired

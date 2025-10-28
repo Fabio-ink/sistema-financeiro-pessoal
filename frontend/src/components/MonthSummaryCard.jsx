@@ -1,21 +1,42 @@
 import React from 'react';
 
-const StatCard = ({ title, value, colorClass }) => (
-    <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400">{title}</h3>
-        <p className={`text-2xl font-bold ${colorClass}`}>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}</p>
-    </div>
-);
+// Função para formatar valores como moeda (BRL)
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+};
 
-function MonthSummaryCard({ stats }) {
-    const { totalIncomes, totalExpenses } = stats;
-    const finalBalance = totalIncomes - totalExpenses;
+function MonthSummaryCard({ title, totalSpent, totalIncome, plannedBudget }) {
+    const percentageSpent = plannedBudget > 0 ? (totalSpent / plannedBudget) * 100 : 0;
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard title="Total Incomes (this month)" value={totalIncomes} colorClass="text-green-600" />
-            <StatCard title="Total Expenses (this month)" value={totalExpenses} colorClass="text-red-600" />
-            <StatCard title="Final Balance" value={finalBalance} colorClass="text-blue-600 dark:text-blue-400" />
+        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col gap-3">
+            <h3 className="font-semibold text-white">{title}</h3>
+
+            <div className="text-sm space-y-2">
+                <div className="flex justify-between">
+                    <span className="text-gray-400">Valor total Gasto</span>
+                    <span className="font-medium text-red-400">{formatCurrency(totalSpent)}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-gray-400">Entradas</span>
+                    <span className="font-medium text-green-400">{formatCurrency(totalIncome)}</span>
+                </div>
+                 <div className="flex justify-between">
+                    <span className="text-gray-400">Valor total planejado</span>
+                    <span className="font-medium text-gray-300">{formatCurrency(plannedBudget)}</span>
+                </div>
+            </div>
+
+            <div className="mt-auto">
+                <p className="text-sm text-gray-400">Porcentagem Gasta</p>
+                <div className="w-full bg-gray-700 rounded-full h-2.5 mt-1">
+                    <div 
+                        className="bg-blue-500 h-2.5 rounded-full" 
+                        style={{ width: `${Math.min(percentageSpent, 100)}%` }} // Garante que a barra não passe de 100%
+                    ></div>
+                </div>
+                <p className="text-right text-xs font-mono mt-1">{percentageSpent.toFixed(1)}%</p>
+            </div>
         </div>
     );
 }
