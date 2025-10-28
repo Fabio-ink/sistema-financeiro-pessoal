@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 import AccountsPage from './pages/AccountsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import TransactionsPage from './pages/TransactionsPage'; 
+import ThemeToggleButton from './components/ThemeToggleButton';
 
 function App() {
   const { theme } = useContext(ThemeContext);
