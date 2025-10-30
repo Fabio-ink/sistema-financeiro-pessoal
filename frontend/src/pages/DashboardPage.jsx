@@ -1,24 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import { getDashboardSummary, getDashboardTransactions } from '../services/api';
 import MonthSummaryCard from '../components/MonthSummaryCard';
+import TransactionChart from '../components/TransactionChart';
 
 function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [accountsRes, transactionsRes, summaryRes] = await Promise.all([
-          api.get('/accounts'),
-          api.get('/transactions'),
-          api.get('/dashboard/summary')
+        const [summaryRes, transactionsRes] = await Promise.all([
+          getDashboardSummary(),
+          getDashboardTransactions(),
         ]);
         
-        setAccounts(accountsRes.data);
-        setRecentTransactions(transactionsRes.data.slice(0, 5)); 
         setMonthlySummary(summaryRes.data);
+
+        // Ordena as transações por data, da mais recente para a mais antiga
+        const sortedTransactions = transactionsRes.data.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
+        
+        setAllTransactions(sortedTransactions);
+        setRecentTransactions(sortedTransactions.slice(0, 5));
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -31,9 +36,8 @@ function DashboardPage() {
   return (
     <div className="container mx-auto space-y-8">
       
-      {/* NOVA SEÇÃO: Resumo de 3 Meses */}
       <div>
-        <h2 className="text-xl font-semibold mb-4 text-white">Visão de 3 meses</h2>
+        <h2 className="text-2xl font-bold mb-4 text-white">Visão Geral dos 3 Meses</h2>
         {monthlySummary ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <MonthSummaryCard {...monthlySummary.previous} />
@@ -41,14 +45,23 @@ function DashboardPage() {
             <MonthSummaryCard {...monthlySummary.next} />
           </div>
         ) : (
-          <p className="text-white">Loading summaries...</p>
+          <p className="text-white">Carregando resumos...</p>
         )}
       </div>
       
-      {/* O restante do Dashboard continua aqui... */}
+      {/* Gráfico de Fluxo de Transações */}
+      <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+          <h2 className="text-2xl font-bold mb-4 text-white">Fluxo de Caixa</h2>
+          {allTransactions.length > 0 ? (
+            <TransactionChart transactions={allTransactions} />
+          ) : (
+            <p className="text-gray-400">Carregando gráfico...</p>
+          )}
+        </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h2 className="text-xl font-semibold mb-4 text-white">Recent Transactions</h2>
+          <h2 className="text-xl font-semibold mb-4 text-white">Últimas Transações</h2>
           <div className="space-y-4">
             {recentTransactions.map(t => (
               <div key={t.id} className="flex justify-between items-center">
@@ -64,7 +77,7 @@ function DashboardPage() {
           </div>
         </div>
         <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h2 className="text-xl font-semibold mb-4 text-white">My Accounts</h2>
+          <h2 className="text-xl font-semibold mb-4 text-white">Minhas Contas</h2>
           <div className="space-y-4">
             {accounts.map(account => (
               <div key={account.id} className="flex justify-between items-center">
@@ -75,12 +88,6 @@ function DashboardPage() {
           </div>
         </div>
       </div>
-
-       {/* Futura Seção de Gráficos */}
-       <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h2 className="text-xl font-semibold mb-4 text-white">Fluxo de transações em cada mês</h2>
-          <p className="text-gray-400">(O componente do gráfico de Donut ficará aqui)</p>
-        </div>
     </div>
   );
 }
