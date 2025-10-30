@@ -41,6 +41,10 @@ public class DashboardService {
         );
     }
 
+    public List<Transaction> getAllTransactions() {
+        return transactionRepository.findAll();
+    }
+
     private MonthSummaryDTO createSummaryForMonth(YearMonth month) {
         List<Transaction> transactions = transactionRepository.findByYearAndMonth(month.getYear(), month.getMonthValue());
         List<Planning> plannings = planningRepository.findByYearMonth(month.format(DateTimeFormatter.ofPattern("yyyy-MM")));

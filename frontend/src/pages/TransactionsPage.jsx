@@ -58,7 +58,7 @@ function TransactionsPage() {
             </div>
 
             {/* Tabela de Transações */}
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded">
+            <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
                 <table className="min-w-full leading-normal">
                     <thead>
                         <tr>
@@ -93,8 +93,8 @@ function TransactionsPage() {
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm text-right">
                                     <button 
                                         onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}
-                                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 mr-4">Edit</button>
-                                    <button onClick={() => handleDelete(t.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600">Delete</button>
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded-lg mr-2">Edit</button>
+                                    <button onClick={() => handleDelete(t.id)} className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg">Delete</button>
                                 </td>
                             </tr>
                         ))}
