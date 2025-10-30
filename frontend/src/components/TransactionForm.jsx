@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
-function TransactionForm({ transactionToEdit, onSave, onCancel }) {
+function TransactionForm({ transaction, onSave, onCancel }) {
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
-        creationDate: new Date().toISOString().split('T')[0], // Data de hoje por padrão
+        creationDate: new Date().toISOString().split('T')[0],
         transactionType: 'SAIDA',
         categoryId: '',
         outAccountId: '',
@@ -15,7 +15,6 @@ function TransactionForm({ transactionToEdit, onSave, onCancel }) {
     const [categories, setCategories] = useState([]);
     const [accounts, setAccounts] = useState([]);
 
-    // Busca categorias e contas para preencher os dropdowns
     useEffect(() => {
         const fetchDropdownData = async () => {
             try {
@@ -32,20 +31,19 @@ function TransactionForm({ transactionToEdit, onSave, onCancel }) {
         fetchDropdownData();
     }, []);
     
-    // Se estivermos editando, preenche o formulário com os dados da transação
     useEffect(() => {
-        if (transactionToEdit) {
+        if (transaction) {
             setFormData({
-                name: transactionToEdit.name,
-                amount: transactionToEdit.amount,
-                creationDate: new Date(transactionToEdit.creationDate).toISOString().split('T')[0],
-                transactionType: transactionToEdit.transactionType,
-                categoryId: transactionToEdit.category?.id || '',
-                outAccountId: transactionToEdit.outAccount?.id || '',
-                inAccountId: transactionToEdit.inAccount?.id || ''
+                name: transaction.name,
+                amount: transaction.amount,
+                creationDate: new Date(transaction.creationDate).toISOString().split('T')[0],
+                transactionType: transaction.transactionType,
+                categoryId: transaction.category?.id || '',
+                outAccountId: transaction.outAccount?.id || '',
+                inAccountId: transaction.inAccount?.id || ''
             });
         }
-    }, [transactionToEdit]);
+    }, [transaction]);
 
 
     const handleChange = (e) => {
@@ -66,52 +64,53 @@ function TransactionForm({ transactionToEdit, onSave, onCancel }) {
             inAccount: formData.inAccountId ? { id: parseInt(formData.inAccountId) } : null,
         };
         
-        // Se for uma edição, adiciona o ID
-        if (transactionToEdit) {
-            submissionData.id = transactionToEdit.id;
+        if (transaction) {
+            submissionData.id = transaction.id;
         }
 
         onSave(submissionData);
     };
 
+    const inputClasses = "w-full p-2 border rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white";
+    const selectClasses = "w-full p-2 border rounded bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white";
+
+
     return (
-        // Modal Overlay
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            {/* Modal Content */}
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold mb-4">{transactionToEdit ? 'Edit Transaction' : 'New Transaction'}</h2>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold mb-4 dark:text-white">{transaction ? 'Edit Transaction' : 'New Transaction'}</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Name" className="w-full p-2 border rounded" required />
-                    <input name="amount" type="number" step="0.01" value={formData.amount} onChange={handleChange} placeholder="Amount" className="w-full p-2 border rounded" required />
-                    <input name="creationDate" type="date" value={formData.creationDate} onChange={handleChange} className="w-full p-2 border rounded" required />
+                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Name" className={inputClasses} required />
+                    <input name="amount" type="number" step="0.01" value={formData.amount} onChange={handleChange} placeholder="Amount" className={inputClasses} required />
+                    <input name="creationDate" type="date" value={formData.creationDate} onChange={handleChange} className={inputClasses} required />
                     
-                    <select name="transactionType" value={formData.transactionType} onChange={handleChange} className="w-full p-2 border rounded">
+                    <select name="transactionType" value={formData.transactionType} onChange={handleChange} className={selectClasses}>
                         <option value="SAIDA">Expense (Saída)</option>
                         <option value="ENTRADA">Income (Entrada)</option>
                     </select>
                     
-                    <select name="categoryId" value={formData.categoryId} onChange={handleChange} className="w-full p-2 border rounded">
+                    <select name="categoryId" value={formData.categoryId} onChange={handleChange} className={selectClasses}>
                         <option value="">Select a Category</option>
                         {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                     </select>
 
                     {formData.transactionType === 'SAIDA' && (
-                         <select name="outAccountId" value={formData.outAccountId} onChange={handleChange} className="w-full p-2 border rounded">
+                         <select name="outAccountId" value={formData.outAccountId} onChange={handleChange} className={selectClasses}>
                             <option value="">Select Outcome Account</option>
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </select>
                     )}
 
                     {formData.transactionType === 'ENTRADA' && (
-                         <select name="inAccountId" value={formData.inAccountId} onChange={handleChange} className="w-full p-2 border rounded">
+                         <select name="inAccountId" value={formData.inAccountId} onChange={handleChange} className={selectClasses}>
                             <option value="">Select Income Account</option>
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </select>
                     )}
 
                     <div className="flex justify-end space-x-4">
-                        <button type="button" onClick={onCancel} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
-                        <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">Save</button>
+                        <button type="button" onClick={onCancel} className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg">Cancel</button>
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">Save</button>
                     </div>
                 </form>
             </div>
