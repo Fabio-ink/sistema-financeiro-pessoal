@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDashboardSummary, getDashboardTransactions } from '../services/api';
 import MonthSummaryCard from '../components/MonthSummaryCard';
 import TransactionChart from '../components/TransactionChart';
+import Card from '../components/Card';
 
 function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
@@ -50,17 +51,17 @@ function DashboardPage() {
       </div>
       
       {/* Gráfico de Fluxo de Transações */}
-      <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+      <Card>
           <h2 className="text-2xl font-bold mb-4 text-white">Fluxo de Caixa</h2>
           {allTransactions.length > 0 ? (
             <TransactionChart transactions={allTransactions} />
           ) : (
             <p className="text-gray-400">Carregando gráfico...</p>
           )}
-        </div>
+        </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-gray-800 p-6 rounded-lg border border-gray-700">
+        <Card className="lg:col-span-2">
           <h2 className="text-xl font-semibold mb-4 text-white">Últimas Transações</h2>
           <div className="space-y-4">
             {recentTransactions.map(t => (
@@ -75,8 +76,8 @@ function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
-        <div className="lg:col-span-1 bg-gray-800 p-6 rounded-lg border border-gray-700">
+        </Card>
+        <Card className="lg:col-span-1">
           <h2 className="text-xl font-semibold mb-4 text-white">Minhas Contas</h2>
           <div className="space-y-4">
             {accounts.map(account => (
@@ -86,7 +87,7 @@ function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

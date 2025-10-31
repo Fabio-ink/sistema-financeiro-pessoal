@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import TransactionForm from '../components/TransactionForm';
+import Button from '../components/Button';
+import PageTitle from '../components/PageTitle';
+import Card from '../components/Card';
 
 function TransactionsPage() {
     const [transactions, setTransactions] = useState([]);
@@ -49,16 +52,16 @@ function TransactionsPage() {
     return (
         <div className="container mx-auto">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold dark:text-white">All Transactions</h1>
-                <button 
-                    onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}
-                    className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded">
+                <PageTitle>All Transactions</PageTitle>
+                <Button 
+                    variant="success"
+                    onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}>
                     + New Transaction
-                </button>
+                </Button>
             </div>
 
             {/* Tabela de Transações */}
-            <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            <Card className="overflow-hidden">
                 <table className="min-w-full leading-normal">
                     <thead>
                         <tr>
@@ -91,24 +94,24 @@ function TransactionsPage() {
                                     <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{new Date(t.creationDate).toLocaleDateString('pt-BR')}</p>
                                 </td>
                                 <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm text-right">
-                                    <button 
-                                        onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded-lg mr-2">Edit</button>
-                                    <button onClick={() => handleDelete(t.id)} className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-lg">Delete</button>
+                                    <Button 
+                                        variant="warning"
+                                        size="sm"
+                                        onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}>Edit</Button>
+                                    <Button onClick={() => handleDelete(t.id)} variant="danger" size="sm">Delete</Button>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-            </div>
+            </Card>
 
-            {isModalOpen && (
-                <TransactionForm 
-                    transaction={selectedTransaction} 
-                    onSave={handleSave} 
-                    onCancel={() => setIsModalOpen(false)} 
-                />
-            )}
+            <TransactionForm 
+                isOpen={isModalOpen}
+                transaction={selectedTransaction} 
+                onSave={handleSave} 
+                onCancel={() => setIsModalOpen(false)} 
+            />
         </div>
     );
 }
