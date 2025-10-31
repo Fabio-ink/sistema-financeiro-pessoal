@@ -35,6 +35,12 @@ public class CategoryController {
                 }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/delete-multiple")
+    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
+        categoryRepository.deleteAllById(ids);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleter(@PathVariable Long id) {
         return categoryRepository.findById(id)
