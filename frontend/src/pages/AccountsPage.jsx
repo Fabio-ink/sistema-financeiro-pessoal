@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCrud } from '../hooks/useCrud';
 import PageTitle from '../components/ui/PageTitle';
 import Card from '../components/ui/Card';
@@ -7,10 +7,11 @@ import Spinner from '../components/Spinner';
 import ErrorMessage from '../components/ErrorMessage';
 
 function AccountsPage() {
-  const { items: accounts, loading, error, addItem, updateItem, deleteItem } = useCrud('/accounts');
+  const { items: accounts, loading, error, addItem, updateItem, deleteMultipleItems } = useCrud('/accounts');
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
   const [editingAccount, setEditingAccount] = useState(null);
+  const [selectedAccounts, setSelectedAccounts] = useState(new Set());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,9 +34,35 @@ function AccountsPage() {
     setInitialBalance(account.initialBalance);
   };
 
-  const handleDelete = async (id) => {
-    await deleteItem(id);
+  const handleDeleteSelected = async () => {
+    await deleteMultipleItems(Array.from(selectedAccounts));
+    setSelectedAccounts(new Set());
   };
+
+  const handleSelect = (accountId) => {
+    setSelectedAccounts(prev => {
+        const newSelected = new Set(prev);
+        if (newSelected.has(accountId)) {
+            newSelected.delete(accountId);
+        } else {
+            newSelected.add(accountId);
+        }
+        return newSelected;
+    });
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+        setSelectedAccounts(new Set(accounts.map(a => a.id)));
+    } else {
+        setSelectedAccounts(new Set());
+    }
+  };
+
+  const isAllSelected = useMemo(() => 
+    accounts.length > 0 && selectedAccounts.size === accounts.length,
+    [selectedAccounts.size, accounts.length]
+  );
   
   const cancelEdit = () => {
     setEditingAccount(null);
@@ -45,7 +72,16 @@ function AccountsPage() {
 
   return (
     <div className="container mx-auto">
-      <PageTitle>Manage Accounts</PageTitle>
+      <div className="flex justify-between items-center mb-6">
+        <PageTitle>Manage Accounts</PageTitle>
+        {selectedAccounts.size > 0 && (
+            <Button 
+                variant="danger"
+                onClick={handleDeleteSelected}>
+                Delete Selected ({selectedAccounts.size})
+            </Button>
+        )}
+      </div>
 
       <Card as="form" onSubmit={handleSubmit} className="mb-8 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -76,23 +112,29 @@ function AccountsPage() {
         <ErrorMessage message={error} />
       ) : (
         <div className="space-y-3">
-          {accounts.length > 0 ? (
-            accounts.map(account => (
-              <Card key={account.id} className="flex justify-between items-center p-3">
-                <div>
-                  <span className="font-semibold dark:text-gray-200">{account.name}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-gray-700 dark:text-gray-300">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(account.initialBalance)}
-                  </span>
-                  <div className="flex space-x-2">
-                    <Button onClick={() => handleEdit(account)} variant="warning" size="sm">Edit</Button>
-                    <Button onClick={() => handleDelete(account.id)} variant="danger" size="sm">Delete</Button>
-                  </div>
-                </div>
-              </Card>
-            ))
+            {accounts.length > 0 ? (
+                <>
+                    <div className="flex items-center p-3">
+                        <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="mr-4"/>
+                        <span>Select All</span>
+                    </div>
+                    {accounts.map(account => (
+                        <Card key={account.id} className={`flex justify-between items-center p-3 ${selectedAccounts.has(account.id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}>
+                            <div className="flex items-center">
+                                <input type="checkbox" checked={selectedAccounts.has(account.id)} onChange={() => handleSelect(account.id)} className="mr-4"/>
+                                <span className="font-semibold dark:text-gray-200">{account.name}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <span className="text-gray-700 dark:text-gray-300">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(account.currentBalance)}
+                                </span>
+                                <div className="flex space-x-2">
+                                    <Button onClick={() => handleEdit(account)} variant="warning" size="sm">Edit</Button>
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+                </>
           ) : (
             <Card className="text-center p-6">
               <p className="text-gray-500 dark:text-gray-400">No accounts found. Add one using the form above.</p>

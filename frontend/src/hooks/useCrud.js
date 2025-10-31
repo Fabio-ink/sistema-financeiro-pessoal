@@ -60,5 +60,24 @@ export function useCrud(endpoint) {
     return null;
   }, [endpoint]);
 
-  return { items, loading, error, addItem, updateItem, deleteItem, fetchItems };
+  const deleteMultipleItems = useCallback(async (ids) => {
+    console.log('Attempting to delete items with IDs:', ids);
+    if (window.confirm(`Are you sure you want to delete ${ids.length} items?`)) {
+      try {
+        const response = await api.post(`${endpoint}/delete-multiple`, ids);
+        console.log('Deletion response:', response);
+        setItems(prevItems => prevItems.filter(item => !ids.includes(item.id)));
+        return null;
+      } catch (err) {
+        console.error(`Error deleting items from ${endpoint}:`, err);
+        if (err.response) {
+          console.error('Error response:', err.response);
+        }
+        return err;
+      }
+    }
+    return null;
+  }, [endpoint]);
+
+  return { items, loading, error, addItem, updateItem, deleteItem, deleteMultipleItems, fetchItems };
 }
