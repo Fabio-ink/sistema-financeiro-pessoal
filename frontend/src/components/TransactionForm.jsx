@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import Button from './Button';
-import Input from './Input';
-import Select from './Select';
-import Modal from './Modal';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Select from './ui/Select';
+import Modal from './ui/Modal';
 
 function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
     const [formData, setFormData] = useState({
@@ -18,6 +18,7 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
 
     const [categories, setCategories] = useState([]);
     const [accounts, setAccounts] = useState([]);
+    const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
         const fetchDropdownData = async () => {
@@ -55,9 +56,30 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const validateForm = () => {
+        const errors = {};
+        if (parseFloat(formData.amount) <= 0) {
+            errors.amount = "Amount must be a positive number.";
+        }
+        if (!formData.name) {
+            errors.name = "Name is required.";
+        }
+        if (!formData.creationDate) {
+            errors.date = "Date is required.";
+        }
+        // Add more validations as needed
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        if (!validateForm()) {
+            return;
+        }
+
         const submissionData = {
             name: formData.name,
             amount: parseFloat(formData.amount),
@@ -80,9 +102,18 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
         <Modal isOpen={isOpen} onCancel={onCancel}>
             <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{transaction ? 'Edit Transaction' : 'New Transaction'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Input name="name" value={formData.name} onChange={handleChange} placeholder="Name" required />
-                <Input name="amount" type="number" step="0.01" value={formData.amount} onChange={handleChange} placeholder="Amount" required />
-                <Input name="creationDate" type="date" value={formData.creationDate} onChange={handleChange} required />
+                <div>
+                    <Input name="name" value={formData.name} onChange={handleChange} placeholder="Name" required />
+                    {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+                </div>
+                <div>
+                    <Input name="amount" type="number" step="0.01" value={formData.amount} onChange={handleChange} placeholder="Amount" required />
+                    {formErrors.amount && <p className="text-red-500 text-xs mt-1">{formErrors.amount}</p>}
+                </div>
+                <div>
+                    <Input name="creationDate" type="date" value={formData.creationDate} onChange={handleChange} required />
+                    {formErrors.date && <p className="text-red-500 text-xs mt-1">{formErrors.date}</p>}
+                </div>
                 
                 <Select name="transactionType" value={formData.transactionType} onChange={handleChange}>
                     <option value="SAIDA">Expense (Saída)</option>
