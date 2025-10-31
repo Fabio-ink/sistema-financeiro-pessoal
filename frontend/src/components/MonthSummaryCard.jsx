@@ -1,4 +1,5 @@
 import React from 'react';
+import Card from './Card';
 
 // Função para formatar valores como moeda (BRL)
 const formatCurrency = (value) => {
@@ -9,7 +10,7 @@ function MonthSummaryCard({ title, totalSpent, totalIncome, plannedBudget }) {
     const percentageSpent = plannedBudget > 0 ? (totalSpent / plannedBudget) * 100 : 0;
 
     return (
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col gap-3">
+        <Card className="p-4 flex flex-col gap-3">
             <h3 className="font-semibold text-white">{title}</h3>
 
             <div className="text-sm space-y-2">
@@ -37,7 +38,7 @@ function MonthSummaryCard({ title, totalSpent, totalIncome, plannedBudget }) {
                 </div>
                 <p className="text-right text-xs font-mono mt-1">{percentageSpent.toFixed(1)}%</p>
             </div>
-        </div>
+        </Card>
     );
 }
 
