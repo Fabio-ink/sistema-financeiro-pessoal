@@ -1,52 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useCrud } from '../hooks/useCrud';
 import TransactionForm from '../components/TransactionForm';
-import Button from '../components/Button';
-import PageTitle from '../components/PageTitle';
-import Card from '../components/Card';
+import Button from '../components/ui/Button';
+import PageTitle from '../components/ui/PageTitle';
+import Card from '../components/ui/Card';
+import Spinner from '../components/Spinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 function TransactionsPage() {
-    const [transactions, setTransactions] = useState([]);
+    const { items: transactions, loading, error, addItem, updateItem, deleteItem } = useCrud('/transactions');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-    const fetchTransactions = async () => {
-        try {
-            const response = await api.get('/transactions');
-            setTransactions(response.data);
-        } catch (error) {
-            console.error("Error fetching transactions:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchTransactions();
-    }, []);
-
     const handleSave = async (transactionData) => {
-        try {
-            if (selectedTransaction) {
-                await api.put(`/transactions/${selectedTransaction.id}`, transactionData);
-            } else {
-                await api.post('/transactions', transactionData);
-            }
-            setIsModalOpen(false);
-            fetchTransactions();
-        } catch (error) {
-            console.error("Error saving transaction:", error);
-            alert("Failed to save transaction. Please check the console for details.");
+        if (selectedTransaction) {
+            await updateItem(selectedTransaction.id, transactionData);
+        } else {
+            await addItem(transactionData);
         }
+        setIsModalOpen(false);
+        setSelectedTransaction(null);
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this transaction?')) {
-            try {
-                await api.delete(`/transactions/${id}`);
-                fetchTransactions();
-            } catch (error) {
-                alert('Error deleting transaction:', error);
-            }
-        }
+        await deleteItem(id);
     };
 
     return (
@@ -60,51 +37,62 @@ function TransactionsPage() {
                 </Button>
             </div>
 
-            {/* Tabela de Transações */}
-            <Card className="overflow-hidden">
-                <table className="min-w-full leading-normal">
-                    <thead>
-                        <tr>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Account</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800">
-                        {transactions.map(t => (
-                            <tr key={t.id} className="dark:bg-gray-800">
-                                <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.name}</p>
-                                </td>
-                                <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className={`whitespace-no-wrap ${t.transactionType === 'SAIDA' ? 'text-red-600' : 'text-green-600'}`}>
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
-                                    </p>
-                                </td>
-                                <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.category?.name || 'N/A'}</p>
-                                </td>
-                                <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.outAccount?.name || t.inAccount?.name || 'N/A'}</p>
-                                </td>
-                                <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                    <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{new Date(t.creationDate).toLocaleDateString('pt-BR')}</p>
-                                </td>
-                                <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm text-right">
-                                    <Button 
-                                        variant="warning"
-                                        size="sm"
-                                        onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}>Edit</Button>
-                                    <Button onClick={() => handleDelete(t.id)} variant="danger" size="sm">Delete</Button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </Card>
+            {loading ? (
+                <Spinner />
+            ) : error ? (
+                <ErrorMessage message={error} />
+            ) : (
+                <Card className="overflow-hidden">
+                    {transactions.length > 0 ? (
+                        <table className="min-w-full leading-normal">
+                            <thead>
+                                <tr>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</th>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Account</th>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800">
+                                {transactions.map(t => (
+                                    <tr key={t.id} className="dark:bg-gray-800">
+                                        <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
+                                            <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.name}</p>
+                                        </td>
+                                        <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
+                                            <p className={`whitespace-no-wrap ${t.transactionType === 'SAIDA' ? 'text-red-600' : 'text-green-600'}`}>
+                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
+                                            </p>
+                                        </td>
+                                        <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
+                                            <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.category?.name || 'N/A'}</p>
+                                        </td>
+                                        <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
+                                            <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.outAccount?.name || t.inAccount?.name || 'N/A'}</p>
+                                        </td>
+                                        <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
+                                            <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{new Date(t.creationDate).toLocaleDateString('pt-BR')}</p>
+                                        </td>
+                                        <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm text-right">
+                                            <Button 
+                                                variant="warning"
+                                                size="sm"
+                                                onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}>Edit</Button>
+                                            <Button onClick={() => handleDelete(t.id)} variant="danger" size="sm">Delete</Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <div className="text-center p-6">
+                            <p className="text-gray-500 dark:text-gray-400">No transactions found. Click '+ New Transaction' to add one.</p>
+                        </div>
+                    )}
+                </Card>
+            )}
 
             <TransactionForm 
                 isOpen={isModalOpen}

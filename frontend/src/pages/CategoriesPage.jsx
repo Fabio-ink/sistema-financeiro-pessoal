@@ -1,43 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
-import PageTitle from '../components/PageTitle';
-import Card from '../components/Card';
-import Button from '../components/Button';
+import React, { useState } from 'react';
+import { useCrud } from '../hooks/useCrud';
+import PageTitle from '../components/ui/PageTitle';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Spinner from '../components/Spinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 function CategoriesPage() {
-  const [categories, setCategories] = useState([]);
+  const { items: categories, loading, error, addItem, updateItem, deleteItem } = useCrud('/categories');
   const [name, setName] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get('/categories');
-      setCategories(response.data);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const categoryData = { name };
 
-    try {
-      if (editingCategory) {
-        await api.put(`/categories/${editingCategory.id}`, categoryData);
-      } else {
-        await api.post('/categories', categoryData);
-      }
-      setName('');
-      setEditingCategory(null);
-      fetchCategories();
-    } catch (error) {
-      console.error("Error saving category:", error);
+    if (editingCategory) {
+      await updateItem(editingCategory.id, categoryData);
+    } else {
+      await addItem(categoryData);
     }
+
+    setName('');
+    setEditingCategory(null);
   };
 
   const handleEdit = (category) => {
@@ -46,14 +31,7 @@ function CategoriesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      try {
-        await api.delete(`/categories/${id}`);
-        fetchCategories();
-      } catch (error) {
-        console.error("Error deleting category:", error);
-      }
-    }
+    await deleteItem(id);
   };
 
   const cancelEdit = () => {
@@ -90,17 +68,29 @@ function CategoriesPage() {
         </div>
       </Card>
 
-      <div className="space-y-3">
-        {categories.map(cat => (
-          <Card key={cat.id} className="flex justify-between items-center p-3">
-            <span className="font-semibold text-gray-800 dark:text-gray-200">{cat.name}</span>
-            <div className="flex space-x-2">
-              <Button onClick={() => handleEdit(cat)} variant="warning" size="sm">Edit</Button>
-              <Button onClick={() => handleDelete(cat.id)} variant="danger" size="sm">Delete</Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {loading ? (
+        <Spinner />
+      ) : error ? (
+        <ErrorMessage message={error} />
+      ) : (
+        <div className="space-y-3">
+          {categories.length > 0 ? (
+            categories.map(cat => (
+              <Card key={cat.id} className="flex justify-between items-center p-3">
+                <span className="font-semibold text-gray-800 dark:text-gray-200">{cat.name}</span>
+                <div className="flex space-x-2">
+                  <Button onClick={() => handleEdit(cat)} variant="warning" size="sm">Edit</Button>
+                  <Button onClick={() => handleDelete(cat.id)} variant="danger" size="sm">Delete</Button>
+                </div>
+              </Card>
+            ))
+          ) : (
+            <Card className="text-center p-6">
+              <p className="text-gray-500 dark:text-gray-400">No categories found. Add one using the form above.</p>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
