@@ -1,45 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
-import PageTitle from '../components/PageTitle';
-import Card from '../components/Card';
-import Button from '../components/Button';
+import React, { useState } from 'react';
+import { useCrud } from '../hooks/useCrud';
+import PageTitle from '../components/ui/PageTitle';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Spinner from '../components/Spinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 function AccountsPage() {
-  const [accounts, setAccounts] = useState([]);
+  const { items: accounts, loading, error, addItem, updateItem, deleteItem } = useCrud('/accounts');
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
   const [editingAccount, setEditingAccount] = useState(null);
-
-  const fetchAccounts = async () => {
-    try {
-      const response = await api.get('/accounts');
-      setAccounts(response.data);
-    } catch (error) {
-      console.error("Error fetching accounts:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const accountData = { name, initialBalance: parseFloat(initialBalance) };
 
-    try {
-      if (editingAccount) {
-        await api.put(`/accounts/${editingAccount.id}`, accountData);
-      } else {
-        await api.post('/accounts', accountData);
-      }
-      setName('');
-      setInitialBalance('');
-      setEditingAccount(null);
-      fetchAccounts();
-    } catch (error) {
-      console.error("Error saving account:", error);
+    if (editingAccount) {
+      await updateItem(editingAccount.id, accountData);
+    } else {
+      await addItem(accountData);
     }
+    
+    setName('');
+    setInitialBalance('');
+    setEditingAccount(null);
   };
 
   const handleEdit = (account) => {
@@ -49,14 +34,7 @@ function AccountsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this account?')) {
-      try {
-        await api.delete(`/accounts/${id}`);
-        fetchAccounts();
-      } catch (error) {
-        console.error("Error deleting account:", error);
-      }
-    }
+    await deleteItem(id);
   };
   
   const cancelEdit = () => {
@@ -92,24 +70,36 @@ function AccountsPage() {
         </div>
       </Card>
 
-      <div className="space-y-3">
-        {accounts.map(account => (
-          <Card key={account.id} className="flex justify-between items-center p-3">
-            <div>
-              <span className="font-semibold dark:text-gray-200">{account.name}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700 dark:text-gray-300">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(account.initialBalance)}
-              </span>
-              <div className="flex space-x-2">
-                <Button onClick={() => handleEdit(account)} variant="warning" size="sm">Edit</Button>
-                <Button onClick={() => handleDelete(account.id)} variant="danger" size="sm">Delete</Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {loading ? (
+        <Spinner />
+      ) : error ? (
+        <ErrorMessage message={error} />
+      ) : (
+        <div className="space-y-3">
+          {accounts.length > 0 ? (
+            accounts.map(account => (
+              <Card key={account.id} className="flex justify-between items-center p-3">
+                <div>
+                  <span className="font-semibold dark:text-gray-200">{account.name}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(account.initialBalance)}
+                  </span>
+                  <div className="flex space-x-2">
+                    <Button onClick={() => handleEdit(account)} variant="warning" size="sm">Edit</Button>
+                    <Button onClick={() => handleDelete(account.id)} variant="danger" size="sm">Delete</Button>
+                  </div>
+                </div>
+              </Card>
+            ))
+          ) : (
+            <Card className="text-center p-6">
+              <p className="text-gray-500 dark:text-gray-400">No accounts found. Add one using the form above.</p>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

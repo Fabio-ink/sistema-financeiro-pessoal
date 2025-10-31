@@ -1,42 +1,59 @@
 import React, { useState, useEffect } from 'react';
-import { getDashboardSummary, getDashboardTransactions } from '../services/api';
+import { getDashboardSummary, getDashboardTransactions, getAccounts } from '../services/api';
 import MonthSummaryCard from '../components/MonthSummaryCard';
 import TransactionChart from '../components/TransactionChart';
-import Card from '../components/Card';
+import Card from '../components/ui/Card';
+import Spinner from '../components/Spinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 function DashboardPage() {
   const [accounts, setAccounts] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchAllData = async () => {
       try {
-        const [summaryRes, transactionsRes] = await Promise.all([
+        setLoading(true);
+        const [summaryRes, transactionsRes, accountsRes] = await Promise.all([
           getDashboardSummary(),
           getDashboardTransactions(),
+          getAccounts(),
         ]);
         
         setMonthlySummary(summaryRes.data);
 
-        // Ordena as transações por data, da mais recente para a mais antiga
         const sortedTransactions = transactionsRes.data.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate));
         
         setAllTransactions(sortedTransactions);
         setRecentTransactions(sortedTransactions.slice(0, 5));
+        setAccounts(accountsRes.data);
 
+        setError(null);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        setError("Failed to fetch dashboard data. Please try again later.");
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchData();
+    fetchAllData();
   }, []);
+
+  if (loading) {
+    return <Spinner />;
+  }
+
+  if (error) {
+    return <ErrorMessage message={error} />;
+  }
 
   return (
     <div className="container mx-auto space-y-8">
-      
       <div>
         <h2 className="text-2xl font-bold mb-4 text-white">Visão Geral dos 3 Meses</h2>
         {monthlySummary ? (
@@ -46,25 +63,26 @@ function DashboardPage() {
             <MonthSummaryCard {...monthlySummary.next} />
           </div>
         ) : (
-          <p className="text-white">Carregando resumos...</p>
+          <p className="text-white">No summary data available.</p>
         )}
       </div>
       
-      {/* Gráfico de Fluxo de Transações */}
-      <Card>
-          <h2 className="text-2xl font-bold mb-4 text-white">Fluxo de Caixa</h2>
-          {allTransactions.length > 0 ? (
-            <TransactionChart transactions={allTransactions} />
-          ) : (
-            <p className="text-gray-400">Carregando gráfico...</p>
-          )}
-        </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-1">
+          <h2 className="text-xl font-semibold mb-4 text-white">Minhas Contas</h2>
+          <div className="space-y-4">
+            {accounts.length > 0 ? accounts.map(account => (
+              <div key={account.id} className="flex justify-between items-center">
+                <p className="font-semibold text-white">{account.name}</p>
+                <p className="text-gray-300">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(account.initialBalance)}</p>
+              </div>
+            )) : <p className="text-gray-400">No accounts found.</p>}
+          </div>
+        </Card>
         <Card className="lg:col-span-2">
           <h2 className="text-xl font-semibold mb-4 text-white">Últimas Transações</h2>
           <div className="space-y-4">
-            {recentTransactions.map(t => (
+            {recentTransactions.length > 0 ? recentTransactions.map(t => (
               <div key={t.id} className="flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-white">{t.name}</p>
@@ -74,21 +92,19 @@ function DashboardPage() {
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
                 </p>
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card className="lg:col-span-1">
-          <h2 className="text-xl font-semibold mb-4 text-white">Minhas Contas</h2>
-          <div className="space-y-4">
-            {accounts.map(account => (
-              <div key={account.id} className="flex justify-between items-center">
-                <p className="font-semibold text-white">{account.name}</p>
-                <p className="text-gray-300">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(account.initialBalance)}</p>
-              </div>
-            ))}
+            )) : <p className="text-gray-400">No recent transactions.</p>}
           </div>
         </Card>
       </div>
+
+      <Card>
+        <h2 className="text-2xl font-bold mb-4 text-white">Fluxo de Caixa</h2>
+        {allTransactions.length > 0 ? (
+          <TransactionChart transactions={allTransactions} />
+        ) : (
+          <p className="text-gray-400">No transaction data for chart.</p>
+        )}
+      </Card>
     </div>
   );
 }
