@@ -3,9 +3,8 @@ import api from '../services/api';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import Select from './ui/Select';
-import Modal from './ui/Modal';
 
-function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
+function TransactionForm({ transaction, onSave, onCancel }) {
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -39,13 +38,23 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
     useEffect(() => {
         if (transaction) {
             setFormData({
-                name: transaction.name,
-                amount: transaction.amount,
-                creationDate: new Date(transaction.creationDate).toISOString().split('T')[0],
-                transactionType: transaction.transactionType,
+                name: transaction.name || '',
+                amount: transaction.amount || '',
+                creationDate: transaction.creationDate ? new Date(transaction.creationDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                transactionType: transaction.transactionType || 'SAIDA',
                 categoryId: transaction.category?.id || '',
                 outAccountId: transaction.outAccount?.id || '',
                 inAccountId: transaction.inAccount?.id || ''
+            });
+        } else {
+            setFormData({
+                name: '',
+                amount: '',
+                creationDate: new Date().toISOString().split('T')[0],
+                transactionType: 'SAIDA',
+                categoryId: '',
+                outAccountId: '',
+                inAccountId: ''
             });
         }
     }, [transaction]);
@@ -66,6 +75,9 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
         }
         if (!formData.creationDate) {
             errors.date = "Date is required.";
+        }
+        if (formData.transactionType === 'SAIDA' && !formData.categoryId) {
+            errors.category = "Category is required for expenses.";
         }
         // Add more validations as needed
 
@@ -99,7 +111,7 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
 
 
     return (
-        <Modal isOpen={isOpen} onCancel={onCancel}>
+        <div>
             <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{transaction ? 'Edit Transaction' : 'New Transaction'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -118,12 +130,14 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
                 <Select name="transactionType" value={formData.transactionType} onChange={handleChange}>
                     <option value="SAIDA">Expense (Saída)</option>
                     <option value="ENTRADA">Income (Entrada)</option>
+                    <option value="MOVIMENTACAO">Transfer (Movimentação)</option>
                 </Select>
                 
                 <Select name="categoryId" value={formData.categoryId} onChange={handleChange}>
-                    <option value="">Select a Category</option>
+                    <option value="">Select a Category (Optional)</option>
                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </Select>
+                {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
 
                 {formData.transactionType === 'SAIDA' && (
                      <Select name="outAccountId" value={formData.outAccountId} onChange={handleChange}>
@@ -139,6 +153,19 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
                     </Select>
                 )}
 
+                {formData.transactionType === 'MOVIMENTACAO' && (
+                    <>
+                        <Select name="outAccountId" value={formData.outAccountId} onChange={handleChange}>
+                            <option value="">Select Outcome Account</option>
+                            {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                        </Select>
+                        <Select name="inAccountId" value={formData.inAccountId} onChange={handleChange}>
+                            <option value="">Select Income Account</option>
+                            {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                        </Select>
+                    </>
+                )}
+
                 <div className="flex justify-end space-x-4 pt-4">
                     <Button type="button" variant="ghost" onClick={onCancel}>
                       Cancel
@@ -148,7 +175,7 @@ function TransactionForm({ transaction, onSave, onCancel, isOpen }) {
                     </Button>
                 </div>
             </form>
-        </Modal>
+        </div>
     );
 }
 

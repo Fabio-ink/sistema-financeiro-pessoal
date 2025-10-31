@@ -18,7 +18,11 @@ const TransactionChart = ({ transactions }) => {
         // Calculate cumulative sum
         let cumulative = 0;
         return sorted.map(t => {
-            cumulative += t.transactionType === 'ENTRADA' ? t.amount : -t.amount;
+            if (t.transactionType === 'ENTRADA') {
+                cumulative += t.amount;
+            } else if (t.transactionType === 'SAIDA') {
+                cumulative -= t.amount;
+            }
             return {
                 date: new Date(t.creationDate).toLocaleDateString('pt-BR'),
                 amount: t.amount,
