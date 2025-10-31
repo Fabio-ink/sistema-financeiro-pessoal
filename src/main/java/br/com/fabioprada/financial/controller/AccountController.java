@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounts")
-@CrossOrigin(origins = "http://localhost:5174") // Permite acesso do nosso frontend
+@CrossOrigin(origins = "http://localhost:5173") // Permite acesso do nosso frontend
 public class AccountController {
 
     @Autowired
@@ -34,6 +34,12 @@ public class AccountController {
                     Account updated = accountRepository.save(account);
                     return ResponseEntity.ok(updated);
                 }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/delete-multiple")
+    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
+        accountRepository.deleteAllById(ids);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
