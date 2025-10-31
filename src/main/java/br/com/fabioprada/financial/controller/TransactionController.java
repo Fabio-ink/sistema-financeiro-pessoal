@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = "http://localhost:5174")
+@CrossOrigin(origins = "http://localhost:5173")
 public class TransactionController {
 
     @Autowired
@@ -39,6 +39,12 @@ public class TransactionController {
                     Transaction updated = transactionRepository.save(transaction);
                     return ResponseEntity.ok(updated);
                 }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/delete-multiple")
+    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
+        transactionRepository.deleteAllById(ids);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")

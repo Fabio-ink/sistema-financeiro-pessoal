@@ -23,9 +23,9 @@ function App() {
               <div className="text-xl font-bold text-white">MyFinances</div>
               <div className="flex items-center space-x-8 text-gray-400">
                 <NavLink to="/" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Dashboard</NavLink>
-                <NavLink to="/transactions" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Transactions</NavLink>
-                <NavLink to="/accounts" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Accounts</NavLink>
-                <NavLink to="/categories" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Categories</NavLink>
+                <NavLink to="/transactions" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Transações</NavLink>
+                <NavLink to="/accounts" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Contas</NavLink>
+                <NavLink to="/categories" className="hover:text-blue-400 transition-colors" style={({ isActive }) => isActive ? activeLinkStyle : undefined}>Categorias</NavLink>
               </div>
             </div>
           </div>
