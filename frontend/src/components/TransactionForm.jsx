@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState, useEffect } from 'react';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import Select from './ui/Select';
+import PageTitle from './ui/PageTitle';
+import { useCrud } from '../hooks/useCrud';
 
 function TransactionForm({ transaction, onSave, onCancel }) {
     const [formData, setFormData] = useState({
@@ -15,26 +16,10 @@ function TransactionForm({ transaction, onSave, onCancel }) {
         inAccountId: ''
     });
 
-    const [categories, setCategories] = useState([]);
-    const [accounts, setAccounts] = useState([]);
+    const { items: categories } = useCrud('/categories');
+    const { items: accounts } = useCrud('/accounts');
     const [formErrors, setFormErrors] = useState({});
 
-    useEffect(() => {
-        const fetchDropdownData = async () => {
-            try {
-                const [categoriesRes, accountsRes] = await Promise.all([
-                    api.get('/categories'),
-                    api.get('/accounts')
-                ]);
-                setCategories(categoriesRes.data);
-                setAccounts(accountsRes.data);
-            } catch (error) {
-                console.error("Error fetching dropdown data:", error);
-            }
-        };
-        fetchDropdownData();
-    }, []);
-    
     useEffect(() => {
         if (transaction) {
             setFormData({
@@ -112,42 +97,42 @@ function TransactionForm({ transaction, onSave, onCancel }) {
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{transaction ? 'Edit Transaction' : 'New Transaction'}</h2>
+            <PageTitle level={2} className="mb-6">{transaction ? 'Edit Transaction' : 'New Transaction'}</PageTitle>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <Input name="name" value={formData.name} onChange={handleChange} placeholder="Name" required />
+                    <Input name="name" label="Name" value={formData.name} onChange={handleChange} placeholder="Name" required />
                     {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
                 </div>
                 <div>
-                    <Input name="amount" type="number" step="0.01" value={formData.amount} onChange={handleChange} placeholder="Amount" required />
+                    <Input name="amount" label="Amount" type="number" step="0.01" value={formData.amount} onChange={handleChange} placeholder="Amount" required />
                     {formErrors.amount && <p className="text-red-500 text-xs mt-1">{formErrors.amount}</p>}
                 </div>
                 <div>
-                    <Input name="creationDate" type="date" value={formData.creationDate} onChange={handleChange} required />
+                    <Input name="creationDate" label="Date" type="date" value={formData.creationDate} onChange={handleChange} required />
                     {formErrors.date && <p className="text-red-500 text-xs mt-1">{formErrors.date}</p>}
                 </div>
                 
-                <Select name="transactionType" value={formData.transactionType} onChange={handleChange}>
+                <Select name="transactionType" label="Transaction Type" value={formData.transactionType} onChange={handleChange}>
                     <option value="SAIDA">Expense (Saída)</option>
                     <option value="ENTRADA">Income (Entrada)</option>
                     <option value="MOVIMENTACAO">Transfer (Movimentação)</option>
                 </Select>
                 
-                <Select name="categoryId" value={formData.categoryId} onChange={handleChange}>
+                <Select name="categoryId" label="Category" value={formData.categoryId} onChange={handleChange}>
                     <option value="">Select a Category (Optional)</option>
                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </Select>
                 {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
 
                 {formData.transactionType === 'SAIDA' && (
-                     <Select name="outAccountId" value={formData.outAccountId} onChange={handleChange}>
+                     <Select name="outAccountId" label="Outcome Account" value={formData.outAccountId} onChange={handleChange}>
                         <option value="">Select Outcome Account</option>
                         {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </Select>
                 )}
 
                 {formData.transactionType === 'ENTRADA' && (
-                     <Select name="inAccountId" value={formData.inAccountId} onChange={handleChange}>
+                     <Select name="inAccountId" label="Income Account" value={formData.inAccountId} onChange={handleChange}>
                         <option value="">Select Income Account</option>
                         {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </Select>
@@ -155,11 +140,11 @@ function TransactionForm({ transaction, onSave, onCancel }) {
 
                 {formData.transactionType === 'MOVIMENTACAO' && (
                     <>
-                        <Select name="outAccountId" value={formData.outAccountId} onChange={handleChange}>
+                        <Select name="outAccountId" label="Outcome Account" value={formData.outAccountId} onChange={handleChange}>
                             <option value="">Select Outcome Account</option>
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </Select>
-                        <Select name="inAccountId" value={formData.inAccountId} onChange={handleChange}>
+                        <Select name="inAccountId" label="Income Account" value={formData.inAccountId} onChange={handleChange}>
                             <option value="">Select Income Account</option>
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </Select>
