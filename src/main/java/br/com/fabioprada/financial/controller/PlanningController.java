@@ -5,40 +5,49 @@ import br.com.fabioprada.financial.repository.PlanningRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/planings")
-@CrossOrigin(origins = "http://localhost:5173") // Permite acesso do nosso frontend
-public class PlanejamentoController {
+@RequestMapping("/api/planning")
+@CrossOrigin(origins = "http://localhost:5173")
+public class PlanningController {
 
     @Autowired
     private PlanningRepository planningRepository;
 
     @GetMapping
-    public List<Planning> listAll() {
+    public List<Planning> getAllPlanning() {
         return planningRepository.findAll();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Planning> getPlanningById(@PathVariable Long id) {
+        Optional<Planning> planning = planningRepository.findById(id);
+        return planning.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping
-    public Planning create(@RequestBody Planning planning) {
+    public Planning createPlanning(@RequestBody Planning planning) {
         return planningRepository.save(planning);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Planning> updated(@PathVariable Long id, @RequestBody Planning planningDetails) {
+    public ResponseEntity<Planning> updatePlanning(@PathVariable Long id, @RequestBody Planning planningDetails) {
         return planningRepository.findById(id)
                 .map(planning -> {
-                    planning.setYearMonth(planningDetails.getYearMonth());
-                    planning.setPlannedValue(planningDetails.getPlannedValue());
+                    planning.setMonth(planningDetails.getMonth());
+                    planning.setYear(planningDetails.getYear());
                     planning.setCategory(planningDetails.getCategory());
-                    Planning updated = planningRepository.save(planning);
-                    return ResponseEntity.ok(updated);
+                    planning.setEstimatedAmount(planningDetails.getEstimatedAmount());
+                    Planning updatedPlanning = planningRepository.save(planning);
+                    return ResponseEntity.ok(updatedPlanning);
                 }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleter(@PathVariable Long id) {
+    public ResponseEntity<?> deletePlanning(@PathVariable Long id) {
         return planningRepository.findById(id)
                 .map(planning -> {
                     planningRepository.delete(planning);
