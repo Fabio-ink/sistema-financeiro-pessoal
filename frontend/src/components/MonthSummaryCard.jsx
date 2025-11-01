@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from './ui/Card';
+import PageTitle from './ui/PageTitle';
 
 // Função para formatar valores como moeda (BRL)
 const formatCurrency = (value) => {
@@ -11,7 +12,7 @@ function MonthSummaryCard({ title, totalSpent, totalIncome, plannedBudget }) {
 
     return (
         <Card className="p-4 flex flex-col gap-3">
-            <h3 className="font-semibold text-white">{title}</h3>
+            <PageTitle level={3} className="font-semibold">{title}</PageTitle>
 
             <div className="text-sm space-y-2">
                 <div className="flex justify-between">

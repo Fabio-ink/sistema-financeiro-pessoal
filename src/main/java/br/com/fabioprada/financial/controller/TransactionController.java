@@ -2,9 +2,11 @@ package br.com.fabioprada.financial.controller;
 
 import br.com.fabioprada.financial.model.Transaction;
 import br.com.fabioprada.financial.repository.TransactionRepository;
+import br.com.fabioprada.financial.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -15,9 +17,18 @@ public class TransactionController {
     @Autowired
     private TransactionRepository transactionRepository;
 
+    @Autowired
+    private TransactionService transactionService;
+
     @GetMapping
-    public List<Transaction> listAll() {
-        return transactionRepository.findAll();
+    public List<Transaction> listAll(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String transactionType
+    ) {
+        return transactionService.searchTransactions(name, startDate, endDate, categoryId, transactionType);
     }
 
     @PostMapping

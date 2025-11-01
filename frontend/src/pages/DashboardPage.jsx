@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { getDashboardSummary, getDashboardTransactions, getAccounts, createTransaction, updateTransaction } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { getDashboardSummary, getDashboardTransactions, createTransaction, updateTransaction } from '../services/api';
 import MonthSummaryCard from '../components/MonthSummaryCard';
 import TransactionChart from '../components/TransactionChart';
 import Card from '../components/ui/Card';
@@ -8,9 +8,11 @@ import ErrorMessage from '../components/ErrorMessage';
 import TransactionForm from '../components/TransactionForm';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
+import { useCrud } from '../hooks/useCrud';
+import PageTitle from '../components/ui/PageTitle';
 
 function DashboardPage() {
-  const [accounts, setAccounts] = useState([]);
+  const { items: accounts, loading: accountsLoading, error: accountsError, fetchItems: fetchAccounts } = useCrud('/accounts');
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
@@ -19,13 +21,12 @@ function DashboardPage() {
   const [isTransactionModalOpen, setTransactionModalOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
-      const [summaryRes, transactionsRes, accountsRes] = await Promise.all([
+      const [summaryRes, transactionsRes] = await Promise.all([
         getDashboardSummary(),
         getDashboardTransactions(),
-        getAccounts(),
       ]);
       
       setMonthlySummary(summaryRes.data);
@@ -34,7 +35,6 @@ function DashboardPage() {
       
       setAllTransactions(sortedTransactions);
       setRecentTransactions(sortedTransactions.slice(0, 5));
-      setAccounts(accountsRes.data);
 
       setError(null);
     } catch (error) {
@@ -43,23 +43,30 @@ function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+    fetchAccounts();
+  }, [fetchAllData, fetchAccounts]);
 
-  const handleOpenModal = (transaction = null) => {
+  console.log("DashboardPage - loading:", loading, "accountsLoading:", accountsLoading);
+  console.log("DashboardPage - error:", error, "accountsError:", accountsError);
+  console.log("DashboardPage - monthlySummary:", monthlySummary);
+  console.log("DashboardPage - recentTransactions:", recentTransactions.length);
+  console.log("DashboardPage - accounts:", accounts.length);
+
+  const handleOpenModal = useCallback((transaction = null) => {
     setTransactionToEdit(transaction);
     setTransactionModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setTransactionToEdit(null);
     setTransactionModalOpen(false);
-  };
+  }, []);
 
-  const handleSave = async (transactionData) => {
+  const handleSave = useCallback(async (transactionData) => {
     if (transactionToEdit && transactionToEdit.id) {
       await updateTransaction(transactionToEdit.id, transactionData);
     } else {
@@ -67,21 +74,21 @@ function DashboardPage() {
     }
     handleCloseModal();
     fetchAllData(); // Refetch data to show the new transaction
-  };
+  }, [transactionToEdit, handleCloseModal, fetchAllData]);
 
-  if (loading) {
+  if (loading || accountsLoading) {
     return <Spinner />;
   }
 
-  if (error) {
-    return <ErrorMessage message={error} />;
+  if (error || accountsError) {
+    return <ErrorMessage message={error || accountsError} />;
   }
 
   return (
     <>
       <div className="container mx-auto space-y-8">
         <div>
-          <h2 className="text-2xl font-bold mb-4 text-white">Visão Geral dos 3 Meses</h2>
+          <PageTitle level={2} className="mb-4">Visão Geral dos 3 Meses</PageTitle>
           {monthlySummary ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <MonthSummaryCard {...monthlySummary.previous} />
@@ -96,7 +103,7 @@ function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-3 space-y-8">
             <Card>
-              <h2 className="text-xl font-semibold mb-4 text-white">Inserir Informações</h2>
+              <PageTitle level={2} className="text-xl font-semibold mb-4">Inserir Informações</PageTitle>
               <div className="space-y-4">
                 <Button variant="success" onClick={() => handleOpenModal({ transactionType: 'ENTRADA' })} className="w-full">⬆️ Nova Entrada</Button>
                 <Button variant="danger" onClick={() => handleOpenModal({ transactionType: 'SAIDA' })} className="w-full">⬇ Novo Gasto</Button>
@@ -106,7 +113,7 @@ function DashboardPage() {
           </div>
           <div className="lg:col-span-9 space-y-8">
             <Card>
-              <h2 className="text-xl font-semibold mb-4 text-white">Últimas Transações</h2>
+              <PageTitle level={2} className="text-xl font-semibold mb-4">Últimas Transações</PageTitle>
               <div className="space-y-4">
                 {recentTransactions.length > 0 ? recentTransactions.map(t => (
                   <div key={t.id} className="flex justify-between items-center">
@@ -124,7 +131,7 @@ function DashboardPage() {
           </div>
           <div className="lg:col-span-9 space-y-8">
             <Card>
-              <h2 className="text-2xl font-bold mb-4 text-white">Fluxo de Caixa</h2>
+              <PageTitle level={2} className="text-2xl font-bold mb-4">Fluxo de Caixa</PageTitle>
               {allTransactions.length > 0 ? (
                 <TransactionChart transactions={allTransactions} />
               ) : (
@@ -134,7 +141,7 @@ function DashboardPage() {
           </div>
           <div className="lg:col-span-3 space-y-10">
             <Card>
-              <h2 className="text-xl font-semibold mb-4 text-white">Minhas Contas</h2>
+              <PageTitle level={2} className="text-xl font-semibold mb-4">Minhas Contas</PageTitle>
               <div className="space-y-4">
                 {accounts.length > 0 ? accounts.map(account => (
                   <div key={account.id} className="flex justify-between items-center">
