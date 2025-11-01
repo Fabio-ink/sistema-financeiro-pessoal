@@ -6,10 +6,10 @@ export function useCrud(endpoint) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (params = {}) => {
     try {
       setLoading(true);
-      const response = await api.get(endpoint);
+      const response = await api.get(endpoint, { params });
       setItems(response.data);
       setError(null);
     } catch (err) {
@@ -19,10 +19,6 @@ export function useCrud(endpoint) {
       setLoading(false);
     }
   }, [endpoint]);
-
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
 
   const addItem = useCallback(async (itemData) => {
     try {
