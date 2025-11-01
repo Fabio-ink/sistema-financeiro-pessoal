@@ -1,17 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useCrud } from '../hooks/useCrud';
 import PageTitle from '../components/ui/PageTitle';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/Spinner';
 import ErrorMessage from '../components/ErrorMessage';
+import Input from '../components/ui/Input';
+import Checkbox from '../components/ui/Checkbox';
 
 function AccountsPage() {
-  const { items: accounts, loading, error, addItem, updateItem, deleteMultipleItems } = useCrud('/accounts');
+  const { items: accounts, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/accounts');
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
   const [editingAccount, setEditingAccount] = useState(null);
   const [selectedAccounts, setSelectedAccounts] = useState(new Set());
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,12 +92,10 @@ function AccountsPage() {
       <Card as="form" onSubmit={handleSubmit} className="mb-8 p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="acc-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Account Name</label>
-            <input id="acc-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Inter, XP" className="mt-1 border p-2 rounded-lg w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required />
+            <Input id="acc-name" label="Account Name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Inter, XP" required />
           </div>
           <div>
-            <label htmlFor="acc-balance" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Initial Balance</label>
-            <input id="acc-balance" type="number" step="0.01" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} placeholder="0.00" className="mt-1 border p-2 rounded-lg w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" required />
+            <Input id="acc-balance" label="Initial Balance" type="number" step="0.01" value={initialBalance} onChange={(e) => setInitialBalance(e.target.value)} placeholder="0.00" required />
           </div>
           <div className="flex items-end gap-2">
             <Button type="submit" variant="primary" className="w-full">
@@ -115,14 +119,13 @@ function AccountsPage() {
             {accounts.length > 0 ? (
                 <>
                     <div className="flex items-center p-3">
-                        <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="mr-4"/>
-                        <span>Select All</span>
+                        <Checkbox id="selectAllAccounts" checked={isAllSelected} onChange={handleSelectAll} label="Select All"/>
                     </div>
                     {accounts.map(account => (
                         <Card key={account.id} className={`flex justify-between items-center p-3 ${selectedAccounts.has(account.id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}>
                             <div className="flex items-center">
-                                <input type="checkbox" checked={selectedAccounts.has(account.id)} onChange={() => handleSelect(account.id)} className="mr-4"/>
-                                <span className="font-semibold dark:text-gray-200">{account.name}</span>
+                                <Checkbox id={`account-${account.id}`} checked={selectedAccounts.has(account.id)} onChange={() => handleSelect(account.id)} />
+                                <span className="font-semibold dark:text-gray-200 ml-2">{account.name}</span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <span className="text-gray-700 dark:text-gray-300">

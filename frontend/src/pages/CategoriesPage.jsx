@@ -1,16 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useCrud } from '../hooks/useCrud';
 import PageTitle from '../components/ui/PageTitle';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Spinner from '../components/Spinner';
 import ErrorMessage from '../components/ErrorMessage';
+import Input from '../components/ui/Input';
+import Checkbox from '../components/ui/Checkbox';
 
 function CategoriesPage() {
-  const { items: categories, loading, error, addItem, updateItem, deleteMultipleItems } = useCrud('/categories');
+  const { items: categories, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/categories');
   const [name, setName] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState(new Set());
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,14 +88,13 @@ function CategoriesPage() {
       <Card as="form" onSubmit={handleSubmit} className="mb-8 p-4">
         <div className="flex items-end gap-4">
           <div className="flex-grow">
-            <label htmlFor="category-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category Name</label>
-            <input
+            <Input
               id="category-name"
+              label="Category Name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Food, Investment"
-              className="mt-1 border p-2 rounded-lg w-full bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
               required
             />
           </div>
@@ -113,14 +118,13 @@ function CategoriesPage() {
           {categories.length > 0 ? (
             <>
                 <div className="flex items-center p-3">
-                    <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="mr-4"/>
-                    <span>Select All</span>
+                    <Checkbox id="selectAllCategories" checked={isAllSelected} onChange={handleSelectAll} label="Select All"/>
                 </div>
                 {categories.map(cat => (
                   <Card key={cat.id} className={`flex justify-between items-center p-3 ${selectedCategories.has(cat.id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}>
                     <div class="flex items-center">
-                        <input type="checkbox" checked={selectedCategories.has(cat.id)} onChange={() => handleSelect(cat.id)} className="mr-4"/>
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">{cat.name}</span>
+                        <Checkbox id={`category-${cat.id}`} checked={selectedCategories.has(cat.id)} onChange={() => handleSelect(cat.id)} />
+                        <span className="font-semibold text-gray-800 dark:text-gray-200 ml-2">{cat.name}</span>
                     </div>
                     <div className="flex space-x-2">
                       <Button onClick={() => handleEdit(cat)} variant="warning" size="sm">Edit</Button>
