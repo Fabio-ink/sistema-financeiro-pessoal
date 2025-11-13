@@ -5,7 +5,7 @@ import Select from './ui/Select';
 import PageTitle from './ui/PageTitle';
 import { useCrud } from '../hooks/useCrud';
 
-function TransactionForm({ transaction, onSave, onCancel }) {
+function TransactionForm({ transaction, onSave, onCancel, categories, accounts }) {
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
@@ -16,8 +16,6 @@ function TransactionForm({ transaction, onSave, onCancel }) {
         inAccountId: ''
     });
 
-    const { items: categories } = useCrud('/categories');
-    const { items: accounts } = useCrud('/accounts');
     const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {

@@ -26,8 +26,12 @@ public class MonthlyPlanning {
 
     private BigDecimal estimatedAmount;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     public String getYearMonth() {
-        return String.format("%d-%02d", year, month);
+        return "%d-%02d".formatted(year, month);
     }
 
     public BigDecimal getPlannedValue() {

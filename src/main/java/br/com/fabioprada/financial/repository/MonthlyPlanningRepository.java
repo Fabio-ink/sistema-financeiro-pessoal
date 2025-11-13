@@ -10,6 +10,10 @@ import java.util.List;
 
 @Repository
 public interface MonthlyPlanningRepository extends JpaRepository<MonthlyPlanning, Long> {
-    @Query("SELECT mp FROM MonthlyPlanning mp WHERE mp.year = :year AND mp.month = :month")
-    List<MonthlyPlanning> findByYearAndMonth(@Param("year") int year, @Param("month") int month);
+    @Query("SELECT mp FROM MonthlyPlanning mp WHERE mp.year = :year AND mp.month = :month AND mp.user.id = :userId")
+    List<MonthlyPlanning> findByYearAndMonthAndUserId(@Param("year") int year, @Param("month") int month, @Param("userId") Long userId);
+
+    List<MonthlyPlanning> findAllByUserId(Long userId);
+
+    void deleteByIdAndUserId(Long id, Long userId);
 }

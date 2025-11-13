@@ -13,6 +13,7 @@ import PageTitle from '../components/ui/PageTitle';
 
 function DashboardPage() {
   const { items: accounts, loading: accountsLoading, error: accountsError, fetchItems: fetchAccounts } = useCrud('/accounts');
+  const { items: categories, loading: categoriesLoading, error: categoriesError, fetchItems: fetchCategories } = useCrud('/categories');
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [monthlySummary, setMonthlySummary] = useState(null);
@@ -48,7 +49,8 @@ function DashboardPage() {
   useEffect(() => {
     fetchAllData();
     fetchAccounts();
-  }, [fetchAllData, fetchAccounts]);
+    fetchCategories();
+  }, [fetchAllData, fetchAccounts, fetchCategories]);
 
   console.log("DashboardPage - loading:", loading, "accountsLoading:", accountsLoading);
   console.log("DashboardPage - error:", error, "accountsError:", accountsError);
@@ -76,12 +78,12 @@ function DashboardPage() {
     fetchAllData(); // Refetch data to show the new transaction
   }, [transactionToEdit, handleCloseModal, fetchAllData]);
 
-  if (loading || accountsLoading) {
+  if (loading || accountsLoading || categoriesLoading) {
     return <Spinner />;
   }
 
-  if (error || accountsError) {
-    return <ErrorMessage message={error || accountsError} />;
+  if (error || accountsError || categoriesError) {
+    return <ErrorMessage message={error || accountsError || categoriesError} />;
   }
 
   return (
@@ -159,6 +161,8 @@ function DashboardPage() {
           onSave={handleSave}
           onCancel={handleCloseModal}
           transaction={transactionToEdit}
+          accounts={accounts}
+          categories={categories}
         />
       </Modal>
     </>

@@ -1,6 +1,14 @@
 package br.com.fabioprada.financial.repository;
 
+import org.springframework.lang.NonNull;
 import br.com.fabioprada.financial.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CategoryRepository extends JpaRepository<Category, Long> {}
+import java.util.List;
+import java.util.Optional;
+
+public interface CategoryRepository extends JpaRepository<Category, Long> {
+    List<Category> findAllByUserId(@NonNull Long userId);
+    Optional<Category> findByIdAndUserId(@NonNull Long id, @NonNull Long userId);
+    void deleteByIdAndUserId(@NonNull Long id, @NonNull Long userId);
+}
