@@ -40,4 +40,8 @@ public class Transaction {
     @ManyToOne
     @JoinColumn(name = "conta_entrada_id")
     private Account inAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }

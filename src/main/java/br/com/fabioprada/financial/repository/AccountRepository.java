@@ -1,6 +1,13 @@
 package br.com.fabioprada.financial.repository;
 
+import org.springframework.lang.NonNull;
 import br.com.fabioprada.financial.model.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AccountRepository extends JpaRepository<Account, Long> {}
+import java.util.List;
+import java.util.Optional;
+
+public interface AccountRepository extends JpaRepository<Account, Long> {
+    List<Account> findAllByUserId(@NonNull Long userId);
+    Optional<Account> findByIdAndUserId(@NonNull Long id, @NonNull Long userId);
+}

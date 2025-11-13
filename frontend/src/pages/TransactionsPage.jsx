@@ -15,6 +15,7 @@ import Checkbox from '../components/ui/Checkbox';
 function TransactionsPage() {
     const { items: transactions, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/transactions');
     const { items: categories, fetchItems: fetchCategories } = useCrud('/categories');
+    const { items: accounts, fetchItems: fetchAccounts } = useCrud('/accounts');
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -30,8 +31,9 @@ function TransactionsPage() {
 
     useEffect(() => {
         fetchCategories();
+        fetchAccounts();
         handleApplyFilters(); // Initial fetch with filters
-    }, [fetchCategories]);
+    }, [fetchCategories, fetchAccounts]);
 
     const handleApplyFilters = () => {
         const params = {};
@@ -244,7 +246,7 @@ function TransactionsPage() {
                     </Card>
                 )
             ) : (
-                <MonthlyPlanningPage />
+                <MonthlyPlanningPage categories={categories} />
             )}
 
             <Modal isOpen={isModalOpen} onCancel={() => setIsModalOpen(false)}>
@@ -252,6 +254,8 @@ function TransactionsPage() {
                     transaction={selectedTransaction} 
                     onSave={handleSave} 
                     onCancel={() => setIsModalOpen(false)} 
+                    categories={categories}
+                    accounts={accounts}
                 />
             </Modal>
         </div>

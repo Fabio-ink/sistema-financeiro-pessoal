@@ -1,7 +1,6 @@
 package br.com.fabioprada.financial.controller;
 
 import br.com.fabioprada.financial.model.Transaction;
-import br.com.fabioprada.financial.repository.TransactionRepository;
 import br.com.fabioprada.financial.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,11 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = "http://localhost:5173")
 public class TransactionController {
-
-    @Autowired
-    private TransactionRepository transactionRepository;
 
     @Autowired
     private TransactionService transactionService;
@@ -33,12 +28,12 @@ public class TransactionController {
 
     @PostMapping
     public Transaction create(@RequestBody Transaction transaction) {
-        return transactionRepository.save(transaction);
+        return transactionService.save(transaction);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Transaction> updated(@PathVariable Long id, @RequestBody Transaction transactionDetails) {
-        return transactionRepository.findById(id)
+        return transactionService.findByIdAndUserId(id)
                 .map(transaction -> {
                     transaction.setName(transactionDetails.getName());
                     transaction.setAmount(transactionDetails.getAmount());
@@ -47,22 +42,16 @@ public class TransactionController {
                     transaction.setCategory(transactionDetails.getCategory());
                     transaction.setOutAccount(transactionDetails.getOutAccount());
                     transaction.setInAccount(transactionDetails.getInAccount());
-                    Transaction updated = transactionRepository.save(transaction);
+                    Transaction updated = transactionService.save(transaction);
                     return ResponseEntity.ok(updated);
                 }).orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/delete-multiple")
-    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
-        transactionRepository.deleteAllById(ids);
-        return ResponseEntity.ok().build();
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleter(@PathVariable Long id) {
-        return transactionRepository.findById(id)
+        return transactionService.findByIdAndUserId(id)
                 .map(transaction -> {
-                    transactionRepository.delete(transaction);
+                    transactionService.deleteById(id);
                     return ResponseEntity.ok().build();
                 }).orElse(ResponseEntity.notFound().build());
     }

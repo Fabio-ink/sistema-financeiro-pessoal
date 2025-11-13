@@ -1,13 +1,16 @@
 package br.com.fabioprada.financial.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "contas")
-@Data
+@Getter
+@Setter
 public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,4 +26,15 @@ public class Account {
              "(SELECT COALESCE(SUM(t.amount), 0) FROM transacoes t WHERE t.conta_entrada_id = id) - " +
              "(SELECT COALESCE(SUM(t.amount), 0) FROM transacoes t WHERE t.conta_saida_id = id)")
     private BigDecimal currentBalance;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.currentBalance == null) {
+            this.currentBalance = this.initialBalance;
+        }
+    }
 }
