@@ -9,7 +9,7 @@ import Spinner from '../components/Spinner';
 import ErrorMessage from '../components/ErrorMessage';
 import Checkbox from '../components/ui/Checkbox';
 
-function MonthlyPlanningPage() {
+function MonthlyPlanningPage({ categories }) {
     const { items: planningEntries, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/monthly-planning');
     const [formData, setFormData] = useState({
         month: new Date().getMonth() + 1,
@@ -17,7 +17,6 @@ function MonthlyPlanningPage() {
         categoryId: '',
         estimatedAmount: ''
     });
-    const { items: categories } = useCrud('/categories');
     const [editingEntry, setEditingEntry] = useState(null);
     const [selectedPlanningEntries, setSelectedPlanningEntries] = useState(new Set());
 
