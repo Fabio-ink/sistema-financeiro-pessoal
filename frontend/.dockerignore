@@ -1,0 +1,9 @@
+# Ignora a pasta de dependências (instalada dentro do container)
+node_modules
+
+# Ignora pastas de build
+dist
+
+# Ignora arquivos do Git e do VS Code
+.git
+.vscode

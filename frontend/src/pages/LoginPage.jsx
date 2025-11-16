@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Card, PageTitle, Input, Button } from '../components/ui';
+import { useNavigate, Link } from 'react-router-dom';
+import { Input, Button, PageTitle } from '../components/ui';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -16,39 +16,42 @@ const LoginPage = () => {
       navigate('/');
     } catch (error) {
       console.error('Failed to login', error);
+      // Adicionar feedback de erro para o usuário
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <Card className="p-8 max-w-md w-full">
-        <PageTitle>Login</PageTitle>
-        <form onSubmit={handleSubmit}>
+    <div className="flex justify-center items-center min-h-screen bg-cover bg-center" style={{ backgroundImage: "url('caminho/para/imagem_de_fundo.jpg')" }}>
+      <div className="absolute inset-0 bg-brand-dark opacity-80"></div> {/* Overlay escuro */}
+      
+      <div className="relative z-10 w-full max-w-md p-8 space-y-6">
+        <PageTitle className="text-center text-4xl text-white">Login</PageTitle>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             type="email"
             placeholder="Email"
+            label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-4"
           />
           <Input
             type="password"
             placeholder="Password"
+            label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mb-4"
           />
-          <Button variant="primary" type="submit" className="w-full">
-            Login
+          <Button variant="primary" type="submit" className="w-full !py-3">
+            Entrar
           </Button>
         </form>
-        <p className="text-center mt-4">
+        <p className="text-center text-gray-300">
           Não tem uma conta?{' '}
-          <a href="/register" className="text-blue-500 hover:underline">
+          <Link to="/register" className="font-semibold text-brand-primary hover:underline">
             Cadastre-se
-          </a>
+          </Link>
         </p>
-      </Card>
+      </div>
     </div>
   );
 };
