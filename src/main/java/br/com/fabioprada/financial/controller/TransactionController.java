@@ -2,7 +2,7 @@ package br.com.fabioprada.financial.controller;
 
 import br.com.fabioprada.financial.model.Transaction;
 import br.com.fabioprada.financial.service.TransactionService;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
@@ -12,8 +12,11 @@ import java.util.List;
 @RequestMapping("/api/transactions")
 public class TransactionController {
 
-    @Autowired
-    private TransactionService transactionService;
+    private final TransactionService transactionService;
+
+    public TransactionController(TransactionService transactionService) {
+        this.transactionService = transactionService;
+    }
 
     @GetMapping
     public List<Transaction> listAll(
@@ -21,8 +24,7 @@ public class TransactionController {
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) String transactionType
-    ) {
+            @RequestParam(required = false) String transactionType) {
         return transactionService.searchTransactions(name, startDate, endDate, categoryId, transactionType);
     }
 
@@ -54,5 +56,11 @@ public class TransactionController {
                     transactionService.deleteById(id);
                     return ResponseEntity.ok().build();
                 }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/delete-multiple")
+    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
+        transactionService.deleteMultiple(ids);
+        return ResponseEntity.ok().build();
     }
 }
