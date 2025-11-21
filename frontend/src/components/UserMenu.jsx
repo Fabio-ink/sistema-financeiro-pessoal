@@ -51,12 +51,15 @@ function UserMenu() {
             <p className="text-sm text-gray-400 truncate">{user?.email || user?.sub}</p>
           </div>
           <nav className="flex flex-col p-2">
-            <a href="#" className="flex items-center gap-3 p-2 rounded-md hover:bg-brand-secondary text-gray-300">
+            <button 
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/profile');
+              }}
+              className="flex items-center gap-3 p-2 rounded-md hover:bg-brand-secondary text-gray-300 w-full text-left"
+            >
               <User size={16} /> Meus Dados
-            </a>
-            <a href="#" className="flex items-center gap-3 p-2 rounded-md hover:bg-brand-secondary text-gray-300">
-              <Settings size={16} /> Redefinir senha
-            </a>
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 p-2 rounded-md hover:bg-brand-secondary text-brand-red w-full text-left"
