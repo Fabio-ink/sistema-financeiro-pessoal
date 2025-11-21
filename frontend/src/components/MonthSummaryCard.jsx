@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from './ui/Card';
 import PageTitle from './ui/PageTitle';
+import { Calendar } from 'lucide-react';
 
 // Função para formatar valores como moeda (BRL)
 const formatCurrency = (value) => {
@@ -11,33 +12,40 @@ function MonthSummaryCard({ title, totalSpent, totalIncome, plannedBudget }) {
     const percentageSpent = plannedBudget > 0 ? (totalSpent / plannedBudget) * 100 : 0;
 
     return (
-        <Card className="p-4 flex flex-col gap-3">
-            <PageTitle level={3} className="font-semibold">{title}</PageTitle>
-
-            <div className="text-sm space-y-2">
-                <div className="flex justify-between">
-                    <span className="text-gray-400">Valor total Gasto</span>
-                    <span className="font-medium text-red-400">{formatCurrency(totalSpent)}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span className="text-gray-400">Entradas</span>
-                    <span className="font-medium text-green-400">{formatCurrency(totalIncome)}</span>
-                </div>
-                 <div className="flex justify-between">
-                    <span className="text-gray-400">Valor total planejado</span>
-                    <span className="font-medium text-gray-300">{formatCurrency(plannedBudget)}</span>
+        <Card className="p-6 flex flex-col gap-4 bg-brand-card rounded-2xl border border-brand-border/30 shadow-lg relative overflow-hidden group hover:border-brand-primary/30 transition-colors">
+            <div className="flex justify-between items-center">
+                <PageTitle level={3} className="font-bold text-xl text-white">{title}</PageTitle>
+                <div className="bg-brand-primary/20 p-2 rounded-full text-brand-primary">
+                    <Calendar size={20} />
                 </div>
             </div>
 
-            <div className="mt-auto">
-                <p className="text-sm text-gray-400">Porcentagem Gasta</p>
-                <div className="w-full bg-gray-700 rounded-full h-2.5 mt-1">
+            <div className="text-sm space-y-3 mt-2">
+                <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Valor gasto:</span>
+                    <span className="font-medium text-white">{formatCurrency(totalSpent)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Entradas:</span>
+                    <span className="font-medium text-white">{formatCurrency(totalIncome)}</span>
+                </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Gasto Planejado:</span>
+                    <span className="font-medium text-white">{formatCurrency(plannedBudget)}</span>
+                </div>
+            </div>
+
+            <div className="mt-auto pt-2">
+                <div className="flex justify-between text-xs mb-1">
+                    <span className="text-text-secondary">Porcentagem Gasta:</span>
+                    <span className="text-brand-primary font-mono">{percentageSpent.toFixed(0)}%</span>
+                </div>
+                <div className="w-full bg-brand-dark rounded-full h-2 overflow-hidden">
                     <div 
-                        className="bg-blue-500 h-2.5 rounded-full" 
-                        style={{ width: `${Math.min(percentageSpent, 100)}%` }} // Garante que a barra não passe de 100%
+                        className="bg-brand-primary h-full rounded-full transition-all duration-500 ease-out" 
+                        style={{ width: `${Math.min(percentageSpent, 100)}%` }} 
                     ></div>
                 </div>
-                <p className="text-right text-xs font-mono mt-1">{percentageSpent.toFixed(1)}%</p>
             </div>
         </Card>
     );

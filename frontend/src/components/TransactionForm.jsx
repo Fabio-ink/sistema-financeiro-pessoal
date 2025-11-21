@@ -3,7 +3,6 @@ import Button from './ui/Button';
 import Input from './ui/Input';
 import Select from './ui/Select';
 import PageTitle from './ui/PageTitle';
-import { useCrud } from '../hooks/useCrud';
 
 function TransactionForm({ transaction, onSave, onCancel, categories, accounts }) {
     const [formData, setFormData] = useState({
@@ -13,7 +12,8 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
         transactionType: 'SAIDA',
         categoryId: '',
         outAccountId: '',
-        inAccountId: ''
+        inAccountId: '',
+        totalInstallments: 1
     });
 
     const [formErrors, setFormErrors] = useState({});
@@ -27,7 +27,8 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                 transactionType: transaction.transactionType || 'SAIDA',
                 categoryId: transaction.category?.id || '',
                 outAccountId: transaction.outAccount?.id || '',
-                inAccountId: transaction.inAccount?.id || ''
+                inAccountId: transaction.inAccount?.id || '',
+                totalInstallments: transaction.totalInstallments || 1
             });
         } else {
             setFormData({
@@ -37,7 +38,8 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                 transactionType: 'SAIDA',
                 categoryId: '',
                 outAccountId: '',
-                inAccountId: ''
+                inAccountId: '',
+                totalInstallments: 1
             });
         }
     }, [transaction]);
@@ -59,7 +61,7 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
         if (!formData.creationDate) {
             errors.date = "Date is required.";
         }
-        if (formData.transactionType === 'SAIDA' && !formData.categoryId) {
+        if ((formData.transactionType === 'SAIDA' || formData.transactionType === 'CARTAO') && !formData.categoryId) {
             errors.category = "Category is required for expenses.";
         }
         // Add more validations as needed
@@ -79,13 +81,14 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
             name: formData.name,
             amount: parseFloat(formData.amount),
             creationDate: formData.creationDate,
-            transactionType: formData.transactionType,
+            transactionType: formData.transactionType === 'CARTAO' ? 'SAIDA' : formData.transactionType,
             category: formData.categoryId ? { id: parseInt(formData.categoryId) } : null,
             outAccount: formData.outAccountId ? { id: parseInt(formData.outAccountId) } : null,
             inAccount: formData.inAccountId ? { id: parseInt(formData.inAccountId) } : null,
+            totalInstallments: formData.transactionType === 'CARTAO' ? parseInt(formData.totalInstallments) : 1
         };
         
-        if (transaction) {
+        if (transaction && transaction.id) {
             submissionData.id = transaction.id;
         }
 
@@ -95,7 +98,9 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
 
     return (
         <div>
-            <PageTitle level={2} className="mb-6">{transaction ? 'Edit Transaction' : 'New Transaction'}</PageTitle>
+            <PageTitle level={2} className="mb-6">
+                {transaction ? 'Edit Transaction' : (formData.transactionType === 'CARTAO' ? 'Gasto no Cartão' : 'New Transaction')}
+            </PageTitle>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                     <Input name="name" label="Name" value={formData.name} onChange={handleChange} placeholder="Name" required />
@@ -110,19 +115,27 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                     {formErrors.date && <p className="text-red-500 text-xs mt-1">{formErrors.date}</p>}
                 </div>
                 
-                <Select name="transactionType" label="Transaction Type" value={formData.transactionType} onChange={handleChange}>
-                    <option value="SAIDA">Expense (Saída)</option>
-                    <option value="ENTRADA">Income (Entrada)</option>
-                    <option value="MOVIMENTACAO">Transfer (Movimentação)</option>
-                </Select>
+                {formData.transactionType !== 'CARTAO' && (
+                    <Select name="transactionType" label="Transaction Type" value={formData.transactionType} onChange={handleChange}>
+                        <option value="SAIDA">Expense (Saída)</option>
+                        <option value="ENTRADA">Income (Entrada)</option>
+                        <option value="MOVIMENTACAO">Transfer (Movimentação)</option>
+                    </Select>
+                )}
                 
+                {formData.transactionType === 'CARTAO' && (
+                    <div>
+                        <Input name="totalInstallments" label="Total de Parcelas" type="number" min="1" value={formData.totalInstallments} onChange={handleChange} required />
+                    </div>
+                )}
+
                 <Select name="categoryId" label="Category" value={formData.categoryId} onChange={handleChange}>
                     <option value="">Select a Category (Optional)</option>
                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </Select>
                 {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
 
-                {formData.transactionType === 'SAIDA' && (
+                {(formData.transactionType === 'SAIDA' || formData.transactionType === 'CARTAO') && (
                      <Select name="outAccountId" label="Outcome Account" value={formData.outAccountId} onChange={handleChange}>
                         <option value="">Select Outcome Account</option>
                         {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
@@ -149,12 +162,12 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                     </>
                 )}
 
-                <div className="flex justify-end space-x-4 pt-4">
-                    <Button type="button" variant="ghost" onClick={onCancel}>
-                      Cancel
+                <div className="flex justify-end gap-2 mt-4">
+                    <Button type="button" variant="outline" onClick={onCancel}>
+                      Cancelar
                     </Button>
                     <Button type="submit" variant="primary">
-                      Save
+                      Salvar
                     </Button>
                 </div>
             </form>

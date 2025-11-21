@@ -1,4 +1,5 @@
 package br.com.fabioprada.financial.service;
+
 import br.com.fabioprada.financial.dto.MonthSummaryDTO;
 import br.com.fabioprada.financial.model.MonthlyPlanning;
 import br.com.fabioprada.financial.model.Transaction;
@@ -19,12 +20,14 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
+@SuppressWarnings("null")
 public class DashboardService {
 
     private final TransactionRepository transactionRepository;
     private final MonthlyPlanningRepository monthlyPlanningRepository;
 
-    public DashboardService(TransactionRepository transactionRepository, MonthlyPlanningRepository monthlyPlanningRepository) {
+    public DashboardService(TransactionRepository transactionRepository,
+            MonthlyPlanningRepository monthlyPlanningRepository) {
         this.transactionRepository = transactionRepository;
         this.monthlyPlanningRepository = monthlyPlanningRepository;
     }
@@ -40,15 +43,16 @@ public class DashboardService {
                 YearMonth previousMonth = currentMonth.minusMonths(1);
                 YearMonth nextMonth = currentMonth.plusMonths(1);
 
-                MonthSummaryDTO previousMonthSummary = createSummaryForMonth(previousMonth, Objects.requireNonNull(userId));
-                MonthSummaryDTO currentMonthSummary = createSummaryForMonth(currentMonth, Objects.requireNonNull(userId));
+                MonthSummaryDTO previousMonthSummary = createSummaryForMonth(previousMonth,
+                        Objects.requireNonNull(userId));
+                MonthSummaryDTO currentMonthSummary = createSummaryForMonth(currentMonth,
+                        Objects.requireNonNull(userId));
                 MonthSummaryDTO nextMonthSummary = createSummaryForMonth(nextMonth, Objects.requireNonNull(userId));
 
                 return Map.of(
                         "previous", previousMonthSummary,
                         "current", currentMonthSummary,
-                        "next", nextMonthSummary
-                );
+                        "next", nextMonthSummary);
             }
         }
         return Collections.emptyMap();
@@ -67,8 +71,10 @@ public class DashboardService {
     }
 
     private MonthSummaryDTO createSummaryForMonth(YearMonth month, Long userId) {
-        List<Transaction> transactions = transactionRepository.findByYearAndMonth(month.getYear(), month.getMonthValue(), userId);
-        List<MonthlyPlanning> plannings = monthlyPlanningRepository.findByYearAndMonthAndUserId(month.getYear(), month.getMonthValue(), userId);
+        List<Transaction> transactions = transactionRepository.findByYearAndMonth(month.getYear(),
+                month.getMonthValue(), userId);
+        List<MonthlyPlanning> plannings = monthlyPlanningRepository.findByYearAndMonthAndUserId(month.getYear(),
+                month.getMonthValue(), userId);
 
         BigDecimal totalIncome = transactions.stream()
                 .filter(t -> t.getTransactionType() == TransactionType.ENTRADA)
