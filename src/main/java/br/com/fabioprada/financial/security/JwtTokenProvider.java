@@ -1,9 +1,11 @@
 package br.com.fabioprada.financial.security;
 
+import br.com.fabioprada.financial.config.JwtProperties;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -17,20 +19,21 @@ import java.util.function.Function;
 
 import org.springframework.security.core.GrantedAuthority;
 import java.util.stream.Collectors;
+
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String secretString;
+    private final JwtProperties jwtProperties;
 
-    @Value("${jwt.expiration}")
-    private Long expiration;
+    public JwtTokenProvider(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+    }
 
     private Key key;
 
     @PostConstruct
     public void init() {
-        this.key = Keys.hmacShaKeyFor(secretString.getBytes());
+        this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
     public String getUsernameFromToken(String token) {
@@ -61,12 +64,17 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
         claims.put("roles", roles);
+
+        if (userDetails instanceof br.com.fabioprada.financial.model.User) {
+            claims.put("name", ((br.com.fabioprada.financial.model.User) userDetails).getName());
+        }
+
         return doGenerateToken(claims, userDetails.getUsername());
     }
 
     private String doGenerateToken(Map<String, Object> claims, String subject) {
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration() * 1000))
                 .signWith(key).compact();
     }
 

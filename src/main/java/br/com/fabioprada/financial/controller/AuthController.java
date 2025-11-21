@@ -23,11 +23,14 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
+    private final br.com.fabioprada.financial.service.EmailService emailService;
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtTokenProvider jwtTokenProvider) {
+    public AuthController(AuthenticationManager authenticationManager, UserService userService,
+            JwtTokenProvider jwtTokenProvider, br.com.fabioprada.financial.service.EmailService emailService) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.emailService = emailService;
     }
 
     @PostMapping("/login")
@@ -43,7 +46,42 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
-        userService.createUser(registerRequest.getEmail(), registerRequest.getPassword());
+        userService.createUser(registerRequest.getName(), registerRequest.getEmail(), registerRequest.getPassword());
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody java.util.Map<String, String> request) {
+        String email = request.get("email");
+        try {
+            UserDetails userDetails = userService.loadUserByUsername(email);
+            br.com.fabioprada.financial.model.User user = (br.com.fabioprada.financial.model.User) userDetails;
+
+            String token = java.util.UUID.randomUUID().toString();
+            userService.createPasswordResetTokenForUser(user, token);
+
+            emailService.sendSimpleMessage(email, "Recuperação de Senha - SyncWallet",
+                    "Seu código de recuperação é: " + token);
+
+            return ResponseEntity.ok("Código de recuperação enviado para o email.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erro ao processar solicitação: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody java.util.Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("newPassword");
+
+        java.util.Optional<br.com.fabioprada.financial.model.User> user = userService
+                .getUserByPasswordResetToken(token);
+
+        if (user.isPresent()) {
+            userService.updatePassword(user.get(), newPassword);
+            return ResponseEntity.ok("Senha alterada com sucesso.");
+        } else {
+            return ResponseEntity.badRequest().body("Token inválido ou expirado.");
+        }
     }
 }
