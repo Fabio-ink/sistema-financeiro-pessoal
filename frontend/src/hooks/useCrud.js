@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import api from '../services/api';
 
 export function useCrud(endpoint) {
@@ -24,10 +24,13 @@ export function useCrud(endpoint) {
     try {
       const response = await api.post(endpoint, itemData);
       setItems(prevItems => [...prevItems, response.data]);
-      return null;
+      setError(null);
+      return null; // Success
     } catch (err) {
       console.error(`Error adding item to ${endpoint}:`, err);
-      return err;
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to add item.';
+      setError(errorMessage);
+      return errorMessage; // Return error message
     }
   }, [endpoint]);
 
@@ -35,10 +38,13 @@ export function useCrud(endpoint) {
     try {
       const response = await api.put(`${endpoint}/${id}`, itemData);
       setItems(prevItems => prevItems.map(item => item.id === id ? response.data : item));
-      return null;
+      setError(null);
+      return null; // Success
     } catch (err) {
       console.error(`Error updating item in ${endpoint}:`, err);
-      return err;
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update item.';
+      setError(errorMessage);
+      return errorMessage; // Return error message
     }
   }, [endpoint]);
 
@@ -47,10 +53,13 @@ export function useCrud(endpoint) {
       try {
         await api.delete(`${endpoint}/${id}`);
         setItems(prevItems => prevItems.filter(item => item.id !== id));
-        return null;
+        setError(null);
+        return null; // Success
       } catch (err) {
         console.error(`Error deleting item from ${endpoint}:`, err);
-        return err;
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to delete item.';
+        setError(errorMessage);
+        return errorMessage; // Return error message
       }
     }
     return null;
