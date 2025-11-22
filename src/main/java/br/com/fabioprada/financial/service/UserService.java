@@ -1,6 +1,7 @@
 package br.com.fabioprada.financial.service;
 
 import br.com.fabioprada.financial.model.User;
+import br.com.fabioprada.financial.model.PasswordResetToken;
 import br.com.fabioprada.financial.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,10 +14,13 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final br.com.fabioprada.financial.repository.PasswordResetTokenRepository passwordResetTokenRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            br.com.fabioprada.financial.repository.PasswordResetTokenRepository passwordResetTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
     }
 
     @Override
@@ -25,13 +29,54 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 
-    public User createUser(String email, String password) {
+    public User createUser(String name, String email, String password) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException("Email already in use");
         }
         User user = new User();
+        user.setName(name);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         return userRepository.save(user);
+    }
+
+    public User updateUserName(String email, String newName) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        user.setName(newName);
+        return userRepository.save(user);
+    }
+
+    public void createPasswordResetTokenForUser(User user, String token) {
+        PasswordResetToken myToken = passwordResetTokenRepository.findByUserId(user.getId())
+                .orElse(new PasswordResetToken());
+
+        myToken.setUser(user);
+        myToken.setToken(token);
+        myToken.setExpiryDate(java.time.LocalDateTime.now().plusHours(24));
+        passwordResetTokenRepository.save(myToken);
+    }
+
+    public void updatePassword(User user, String newPassword) {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Senha atual incorreta");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public java.util.Optional<User> getUserByPasswordResetToken(String token) {
+        return passwordResetTokenRepository.findByToken(token)
+                .filter(t -> !t.isExpired())
+                .map(br.com.fabioprada.financial.model.PasswordResetToken::getUser);
     }
 }

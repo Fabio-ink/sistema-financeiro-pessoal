@@ -1,2 +1,35 @@
-@import "tailwindcss/preflight"; 
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-brand-dark: #13111C;
+  --color-brand-card: #1E1B29;
+  --color-brand-card-hover: #2A253A;
+  --color-brand-border: #2D283E;
+  
+  --color-brand-primary: #8A6DFF;
+  --color-brand-primary-hover: #7a5ce6;
+  
+  --color-brand-success: #00D09C;
+  --color-brand-success-hover: #00b386;
+  
+  --color-brand-danger: #FF4C4C;
+  --color-brand-danger-hover: #e63535;
+  
+  --color-brand-info: #8A6DFF;
+  --color-brand-warning: #FFB039;
+  
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #9CA3AF;
+  --color-text-muted: #6B7280;
+
+  --font-sans: "Outfit", "Inter", sans-serif;
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+body {
+  background-color: var(--color-brand-dark);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}

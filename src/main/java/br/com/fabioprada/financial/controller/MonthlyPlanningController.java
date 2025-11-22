@@ -33,7 +33,8 @@ public class MonthlyPlanningController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MonthlyPlanning> updateMonthlyPlanning(@PathVariable Long id, @RequestBody MonthlyPlanning monthlyPlanningDetails) {
+    public ResponseEntity<MonthlyPlanning> updateMonthlyPlanning(@PathVariable Long id,
+            @RequestBody MonthlyPlanning monthlyPlanningDetails) {
         return monthlyPlanningService.findById(id)
                 .map(monthlyPlanning -> {
                     monthlyPlanning.setMonth(monthlyPlanningDetails.getMonth());
@@ -52,5 +53,11 @@ public class MonthlyPlanningController {
                     monthlyPlanningService.deleteById(id);
                     return ResponseEntity.ok().build();
                 }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/delete-multiple")
+    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
+        monthlyPlanningService.deleteMultiple(ids);
+        return ResponseEntity.ok().build();
     }
 }

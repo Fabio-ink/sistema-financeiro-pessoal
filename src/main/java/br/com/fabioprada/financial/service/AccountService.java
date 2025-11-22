@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@SuppressWarnings("null")
 public class AccountService {
 
     private final AccountRepository accountRepository;
@@ -81,7 +82,8 @@ public class AccountService {
             User user = (User) principal;
             Long userId = user.getId();
             if (userId != null) {
-                accountRepository.findByIdAndUserId(id, Objects.requireNonNull(userId)).ifPresent(accountRepository::delete);
+                accountRepository.findByIdAndUserId(id, Objects.requireNonNull(userId))
+                        .ifPresent(accountRepository::delete);
             }
         }
     }

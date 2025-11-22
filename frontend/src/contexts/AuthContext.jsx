@@ -44,9 +44,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password) => {
+  const register = async (name, email, password) => {
     try {
-      await api.post('/auth/register', { email, password });
+      await api.post('/auth/register', { name, email, password });
     } catch (error) {
       console.error('Registration failed', error);
       throw error;
@@ -61,8 +61,16 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const updateUserToken = (newToken) => {
+    localStorage.setItem('token', newToken);
+    api.defaults.headers.Authorization = `Bearer ${newToken}`;
+    const decodedUser = jwtDecode(newToken);
+    setUser(decodedUser);
+    setToken(newToken);
+  };
+
   return (
-    <AuthContext.Provider value={{ token, user, isAuthenticated, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ token, user, isAuthenticated, isLoading, login, register, logout, updateUserToken }}>
       {children}
     </AuthContext.Provider>
   );

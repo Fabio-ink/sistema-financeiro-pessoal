@@ -75,12 +75,12 @@ function CategoriesPage() {
   return (
     <div className="container mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <PageTitle>Manage Categories</PageTitle>
+        <PageTitle>Gerenciar Categorias</PageTitle>
         {selectedCategories.size > 0 && (
             <Button 
                 variant="danger"
                 onClick={handleDeleteSelected}>
-                Delete Selected ({selectedCategories.size})
+                Excluir Selecionados ({selectedCategories.size})
             </Button>
         )}
       </div>
@@ -90,20 +90,20 @@ function CategoriesPage() {
           <div className="flex-grow">
             <Input
               id="category-name"
-              label="Category Name"
+              label="Nome da Categoria"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Food, Investment"
+              placeholder="Ex: Alimentação, Investimento"
               required
             />
           </div>
           <Button type="submit" variant="primary" className="h-10">
-            {editingCategory ? 'Update' : 'Save'}
+            {editingCategory ? 'Atualizar' : 'Salvar'}
           </Button>
           {editingCategory && (
             <Button onClick={cancelEdit} type="button" variant="ghost" className="h-10">
-              Cancel
+              Cancelar
             </Button>
           )}
         </div>
@@ -118,7 +118,7 @@ function CategoriesPage() {
           {categories.length > 0 ? (
             <>
                 <div className="flex items-center p-3">
-                    <Checkbox id="selectAllCategories" checked={isAllSelected} onChange={handleSelectAll} label="Select All"/>
+                    <Checkbox id="selectAllCategories" checked={isAllSelected} onChange={handleSelectAll} label="Selecionar Todos"/>
                 </div>
                 {categories.map(cat => (
                   <Card key={cat.id} className={`flex justify-between items-center p-3 ${selectedCategories.has(cat.id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}>
@@ -127,14 +127,14 @@ function CategoriesPage() {
                         <span className="font-semibold text-gray-800 dark:text-gray-200 ml-2">{cat.name}</span>
                     </div>
                     <div className="flex space-x-2">
-                      <Button onClick={() => handleEdit(cat)} variant="warning" size="sm">Edit</Button>
+                      <Button onClick={() => handleEdit(cat)} variant="warning" size="sm">Editar</Button>
                     </div>
                   </Card>
                 ))}
             </>
           ) : (
             <Card className="text-center p-6">
-              <p className="text-gray-500 dark:text-gray-400">No categories found. Add one using the form above.</p>
+              <p className="text-gray-500 dark:text-gray-400">Nenhuma categoria encontrada. Adicione uma usando o formulário acima.</p>
             </Card>
           )}
         </div>

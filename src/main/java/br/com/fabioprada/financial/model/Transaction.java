@@ -44,4 +44,10 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "installment_number")
+    private Integer installmentNumber;
+
+    @Column(name = "total_installments")
+    private Integer totalInstallments;
 }

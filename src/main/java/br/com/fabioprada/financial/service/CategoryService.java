@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@SuppressWarnings("null")
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
@@ -60,7 +61,8 @@ public class CategoryService {
             User user = (User) principal;
             Long userId = user.getId();
             if (userId != null) {
-                categoryRepository.findByIdAndUserId(id, Objects.requireNonNull(userId)).ifPresent(categoryRepository::delete);
+                categoryRepository.findByIdAndUserId(id, Objects.requireNonNull(userId))
+                        .ifPresent(categoryRepository::delete);
             }
         }
     }

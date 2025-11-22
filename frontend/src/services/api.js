@@ -18,4 +18,8 @@ export const getDashboardTransactions = () => api.get('/dashboard/transactions')
 export const createTransaction = (transactionData) => api.post('/transactions', transactionData);
 export const updateTransaction = (id, transactionData) => api.put(`/transactions/${id}`, transactionData);
 
+export const createAccount = (accountData) => api.post('/accounts', accountData);
+export const updateAccount = (id, accountData) => api.put(`/accounts/${id}`, accountData);
+export const deleteAccount = (id) => api.delete(`/accounts/${id}`);
+
 export default api;

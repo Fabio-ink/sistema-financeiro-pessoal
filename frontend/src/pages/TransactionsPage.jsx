@@ -32,8 +32,8 @@ function TransactionsPage() {
     useEffect(() => {
         fetchCategories();
         fetchAccounts();
-        handleApplyFilters(); // Initial fetch with filters
-    }, [fetchCategories, fetchAccounts]);
+        fetchItems({}); // Initial fetch without filters
+    }, [fetchCategories, fetchAccounts, fetchItems]);
 
     const handleApplyFilters = () => {
         const params = {};
@@ -105,12 +105,12 @@ function TransactionsPage() {
                         <Button 
                             variant={activeTab === 'transactions' ? 'primary' : 'ghost'}
                             onClick={() => setActiveTab('transactions')}>
-                            Transactions
+                            Transações
                         </Button>
                         <Button 
                             variant={activeTab === 'planning' ? 'primary' : 'ghost'}
                             onClick={() => setActiveTab('planning')}>
-                            Monthly Planning
+                            Planejamento Mensal
                         </Button>
                     </div>
                 </div>
@@ -119,14 +119,14 @@ function TransactionsPage() {
                         <Button 
                             variant="danger"
                             onClick={handleDeleteSelected}>
-                            Delete Selected ({selectedTransactions.size})
+                            Excluir Selecionados ({selectedTransactions.size})
                         </Button>
                     )}
                     {activeTab === 'transactions' && (
                         <Button 
                             variant="success"
                             onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}>
-                            + New Transaction
+                            + Nova Transação
                         </Button>
                     )}
                 </div>
@@ -134,51 +134,51 @@ function TransactionsPage() {
 
             {activeTab === 'transactions' && (
                 <Card className="mb-6 p-4">
-                    <PageTitle level={3} className="mb-4">Filter Transactions</PageTitle>
+                    <PageTitle level={3} className="mb-4">Filtrar Transações</PageTitle>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <Input 
-                            label="Name"
+                            label="Nome"
                             type="text"
                             value={filterName}
                             onChange={(e) => setFilterName(e.target.value)}
-                            placeholder="Filter by name"
+                            placeholder="Filtrar por nome"
                         />
                         <Input 
-                            label="Start Date"
+                            label="Data Início"
                             type="date"
                             value={filterStartDate}
                             onChange={(e) => setFilterStartDate(e.target.value)}
                         />
                         <Input 
-                            label="End Date"
+                            label="Data Fim"
                             type="date"
                             value={filterEndDate}
                             onChange={(e) => setFilterEndDate(e.target.value)}
                         />
                         <Select
-                            label="Category"
+                            label="Categoria"
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
                         >
-                            <option value="">All Categories</option>
+                            <option value="">Todas as Categorias</option>
                             {categories.map(category => (
                                 <option key={category.id} value={category.id}>{category.name}</option>
                             ))}
                         </Select>
                         <Select
-                            label="Type"
+                            label="Tipo"
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
                         >
-                            <option value="">All Types</option>
-                            <option value="ENTRADA">Revenue</option>
-                            <option value="SAIDA">Expense</option>
-                            <option value="MOVIMENTACAO">Transfer</option>
+                            <option value="">Todos os Tipos</option>
+                            <option value="ENTRADA">Receita</option>
+                            <option value="SAIDA">Despesa</option>
+                            <option value="MOVIMENTACAO">Transferência</option>
                         </Select>
                     </div>
-                    <div className="flex justify-end space-x-2 mt-4">
-                        <Button variant="secondary" onClick={handleClearFilters}>Clear Filters</Button>
-                        <Button variant="primary" onClick={handleApplyFilters}>Apply Filters</Button>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="secondary" onClick={handleClearFilters}>Limpar Filtros</Button>
+                        <Button variant="primary" onClick={handleApplyFilters}>Aplicar Filtros</Button>
                     </div>
                 </Card>
             )}
@@ -197,11 +197,11 @@ function TransactionsPage() {
                                         <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                             <Checkbox id="selectAllTransactions" checked={isAllSelected} onChange={handleSelectAll} />
                                         </th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Account</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Nome</th>
+                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Valor</th>
+                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Categoria</th>
+                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Conta</th>
+                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Data</th>
                                         <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700"></th>
                                     </tr>
                                 </thead>
@@ -232,7 +232,7 @@ function TransactionsPage() {
                                                 <Button 
                                                     variant="warning"
                                                     size="sm"
-                                                    onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}>Edit</Button>
+                                                    onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}>Editar</Button>
                                             </td>
                                         </tr>
                                     ))}
@@ -240,7 +240,7 @@ function TransactionsPage() {
                             </table>
                         ) : (
                             <div className="text-center p-6">
-                                <p className="text-gray-500 dark:text-gray-400">No transactions found. Click '+ New Transaction' to add one.</p>
+                                <p className="text-gray-500 dark:text-gray-400">Nenhuma transação encontrada. Clique em '+ Nova Transação' para adicionar uma.</p>
                             </div>
                         )}
                     </Card>

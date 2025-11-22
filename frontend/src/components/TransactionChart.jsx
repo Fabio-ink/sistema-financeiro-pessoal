@@ -1,57 +1,165 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import Card from './ui/Card';
-import Button from './ui/Button';
 
 const TransactionChart = ({ transactions }) => {
-    const [filter, setFilter] = useState('all');
+    const [timeRange, setTimeRange] = React.useState('1M'); // Default to 1 Month
 
-    const filteredData = useMemo(() => {
-        let filtered = transactions;
-        if (filter === 'income') {
-            filtered = transactions.filter(t => t.transactionType === 'ENTRADA');
-        } else if (filter === 'expenses') {
-            filtered = transactions.filter(t => t.transactionType === 'SAIDA');
+    const chartData = useMemo(() => {
+        if (!transactions || transactions.length === 0) return [];
+
+        const now = new Date();
+        let startDate = new Date();
+
+        // Filter transactions based on time range
+        switch (timeRange) {
+            case '1S': // 1 Week
+                startDate.setDate(now.getDate() - 7);
+                break;
+            case '1M': // 1 Month
+                startDate.setMonth(now.getMonth() - 1);
+                break;
+            case '1A': // 1 Year
+                startDate.setFullYear(now.getFullYear() - 1);
+                break;
+            case 'Max':
+                startDate = new Date(0); // Beginning of time
+                break;
+            default:
+                startDate.setMonth(now.getMonth() - 1);
         }
 
-        // Sort transactions by date
-        const sorted = filtered.sort((a, b) => new Date(a.creationDate) - new Date(b.creationDate));
+        const filteredTransactions = transactions.filter(t => {
+            const tDate = new Date(t.creationDate);
+            return tDate >= startDate && tDate <= now;
+        });
 
-        // Calculate cumulative sum
-        let cumulative = 0;
-        return sorted.map(t => {
-            if (t.transactionType === 'ENTRADA') {
-                cumulative += t.amount;
-            } else if (t.transactionType === 'SAIDA') {
-                cumulative -= t.amount;
+        // 1. Group transactions by date
+        const groupedByDate = filteredTransactions.reduce((acc, t) => {
+            const date = new Date(t.creationDate).toLocaleDateString('pt-BR');
+            if (!acc[date]) {
+                acc[date] = { date, income: 0, expense: 0, rawDate: new Date(t.creationDate) };
             }
+            if (t.transactionType === 'ENTRADA') {
+                acc[date].income += t.amount;
+            } else if (t.transactionType === 'SAIDA') {
+                acc[date].expense += t.amount;
+            }
+            return acc;
+        }, {});
+
+        // 2. Sort by date
+        const sortedDates = Object.values(groupedByDate).sort((a, b) => a.rawDate - b.rawDate);
+
+        // 3. Calculate cumulative balance
+        let cumulativeBalance = 0;
+        return sortedDates.map(item => {
+            cumulativeBalance += (item.income - item.expense);
             return {
-                date: new Date(t.creationDate).toLocaleDateString('pt-BR'),
-                amount: t.amount,
-                type: t.transactionType,
-                balance: cumulative
+                ...item,
+                balance: cumulativeBalance
             };
         });
-    }, [transactions, filter]);
+    }, [transactions, timeRange]);
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-brand-card border border-brand-border/50 p-3 rounded-lg shadow-xl">
+                    <p className="text-gray-300 font-medium mb-2">{label}</p>
+                    {payload.map((entry, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm mb-1">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                            <span className="text-gray-400 capitalize">{entry.name}:</span>
+                            <span className="text-white font-mono">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(entry.value)}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
-        <Card className="p-4">
-            <div className="flex justify-center mb-4">
-                <Button onClick={() => setFilter('all')} variant={filter === 'all' ? 'primary' : 'secondary'} className="mx-2">All</Button>
-                <Button onClick={() => setFilter('income')} variant={filter === 'income' ? 'success' : 'secondary'} className="mx-2">Income</Button>
-                <Button onClick={() => setFilter('expenses')} variant={filter === 'expenses' ? 'danger' : 'secondary'} className="mx-2">Expenses</Button>
+        <div className="w-full h-full flex flex-col">
+            <div className="flex justify-end gap-2 mb-4">
+                {['1S', '1M', '1A', 'Max'].map((range) => (
+                    <button
+                        key={range}
+                        onClick={() => setTimeRange(range)}
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                            timeRange === range
+                                ? 'bg-brand-primary text-white'
+                                : 'bg-brand-card border border-brand-border/50 text-gray-400 hover:text-white hover:border-brand-primary/50'
+                        }`}
+                    >
+                        {range === '1S' ? '1 Sem' : range === '1M' ? '1 Mês' : range === '1A' ? '1 Ano' : 'Tudo'}
+                    </button>
+                ))}
             </div>
-            <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={filteredData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="balance" stroke="#8884d8" activeDot={{ r: 8 }} />
-                </LineChart>
-            </ResponsiveContainer>
-        </Card>
+            
+            <div className="flex-1 min-h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid vertical={true} horizontal={true} stroke="#374151" strokeOpacity={0.3} />
+                        <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#9CA3AF', fontSize: 12 }} 
+                            dy={10}
+                        />
+                        <YAxis 
+                            hide={true} 
+                            domain={['auto', 'auto']}
+                        />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend 
+                            verticalAlign="bottom" 
+                            height={36} 
+                            iconType="rect"
+                            iconSize={20}
+                            wrapperStyle={{ paddingTop: '20px' }}
+                            formatter={(value) => <span className="text-gray-400 text-sm ml-1">{value}</span>}
+                        />
+                        
+                        {/* Entradas - Green/Teal */}
+                        <Line 
+                            name="Entradas"
+                            type="linear" 
+                            dataKey="income" 
+                            stroke="#10B981" 
+                            strokeWidth={2} 
+                            dot={false}
+                            activeDot={{ r: 6, fill: '#10B981', stroke: '#fff' }}
+                        />
+
+                        {/* Movimentações (Balance) - Purple */}
+                        <Line 
+                            name="Movimentações"
+                            type="linear" 
+                            dataKey="balance" 
+                            stroke="#8B5CF6" 
+                            strokeWidth={2} 
+                            dot={false}
+                            activeDot={{ r: 6, fill: '#8B5CF6', stroke: '#fff' }}
+                        />
+
+                        {/* Saídas - Red */}
+                        <Line 
+                            name="Saídas"
+                            type="linear" 
+                            dataKey="expense" 
+                            stroke="#EF4444" 
+                            strokeWidth={2} 
+                            dot={false}
+                            activeDot={{ r: 6, fill: '#EF4444', stroke: '#fff' }}
+                        />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
     );
 };
 

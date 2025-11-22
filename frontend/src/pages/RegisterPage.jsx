@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, PageTitle, Input, Button } from '../components/ui';
 
 const RegisterPage = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { register } = useAuth();
@@ -12,7 +13,7 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await register(email, password);
+      await register(name, email, password);
       navigate('/login');
     } catch (error) {
       console.error('Failed to register', error);
@@ -20,35 +21,47 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <Card className="p-8 max-w-md w-full">
-        <PageTitle>Register</PageTitle>
-        <form onSubmit={handleSubmit}>
+    <div className="min-h-screen flex justify-center items-center">
+      <div className="absolute inset-0 bg-brand-dark opacity-80"></div> {/* Overlay escuro */}
+      
+      <div className="relative z-10 w-full max-w-md p-8 space-y-6">
+        <PageTitle className="text-center text-4xl text-white">Cadastro</PageTitle>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Input
+            type="text"
+            placeholder="Nome Completo"
+            label="Nome"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
           <Input
             type="email"
             placeholder="Email"
+            label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-4"
+            required
           />
           <Input
             type="password"
             placeholder="Password"
+            label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mb-4"
+            required
           />
-          <Button variant="primary" type="submit" className="w-full">
-            Register
+          <Button variant="primary" type="submit" className="w-full py-3!">
+            Cadastrar
           </Button>
         </form>
-        <p className="text-center mt-4">
+        <p className="text-center text-gray-300">
           Já tem uma conta?{' '}
-          <a href="/login" className="text-blue-500 hover:underline">
-            Login
-          </a>
+          <Link to="/login" className="font-semibold text-brand-primary hover:underline">
+            Entrar
+          </Link>
         </p>
-      </Card>
+      </div>
     </div>
   );
 };
