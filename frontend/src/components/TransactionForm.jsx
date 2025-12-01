@@ -4,6 +4,8 @@ import Input from './ui/Input';
 import Select from './ui/Select';
 import PageTitle from './ui/PageTitle';
 
+import DatePicker from './ui/DatePicker';
+
 function TransactionForm({ transaction, onSave, onCancel, categories, accounts }) {
     const [formData, setFormData] = useState({
         name: '',
@@ -61,10 +63,34 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
         if (!formData.creationDate) {
             errors.date = "Date is required.";
         }
-        if ((formData.transactionType === 'SAIDA' || formData.transactionType === 'CARTAO') && !formData.categoryId) {
-            errors.category = "Category is required for expenses.";
+
+        // Validation for Expense (SAIDA)
+        if (formData.transactionType === 'SAIDA') {
+            if (!formData.categoryId) errors.category = "Category is required for expenses.";
+            if (!formData.outAccountId) errors.outAccount = "Outcome Account is required.";
         }
-        // Add more validations as needed
+
+        // Validation for Credit Card (CARTAO)
+        if (formData.transactionType === 'CARTAO') {
+             if (!formData.categoryId) errors.category = "Category is required for credit card expenses.";
+             // Assuming Credit Card also needs an account (the card itself)
+             // if (!formData.outAccountId) errors.outAccount = "Account is required."; 
+             // User said: "ao adicionar um novo gasto ... obrigatórios ... conta"
+             // So I will enforce it.
+             if (!formData.outAccountId) errors.outAccount = "Credit Card Account is required.";
+        }
+
+        // Validation for Transfer (MOVIMENTACAO)
+        if (formData.transactionType === 'MOVIMENTACAO') {
+            if (!formData.outAccountId) errors.outAccount = "Outcome Account is required.";
+            if (!formData.inAccountId) errors.inAccount = "Income Account is required.";
+        }
+
+        // Validation for Income (ENTRADA)
+        if (formData.transactionType === 'ENTRADA') {
+            if (!formData.inAccountId) errors.inAccount = "Income Account is required.";
+            // Category is optional for Income
+        }
 
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
@@ -81,7 +107,7 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
             name: formData.name,
             amount: parseFloat(formData.amount),
             creationDate: formData.creationDate,
-            transactionType: formData.transactionType === 'CARTAO' ? 'SAIDA' : formData.transactionType,
+            transactionType: formData.transactionType,
             category: formData.categoryId ? { id: parseInt(formData.categoryId) } : null,
             outAccount: formData.outAccountId ? { id: parseInt(formData.outAccountId) } : null,
             inAccount: formData.inAccountId ? { id: parseInt(formData.inAccountId) } : null,
@@ -111,7 +137,7 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                     {formErrors.amount && <p className="text-red-500 text-xs mt-1">{formErrors.amount}</p>}
                 </div>
                 <div>
-                    <Input name="creationDate" label="Date" type="date" value={formData.creationDate} onChange={handleChange} required />
+                    <DatePicker name="creationDate" label="Date" value={formData.creationDate} onChange={handleChange} required />
                     {formErrors.date && <p className="text-red-500 text-xs mt-1">{formErrors.date}</p>}
                 </div>
                 
@@ -120,6 +146,7 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                         <option value="SAIDA">Expense (Saída)</option>
                         <option value="ENTRADA">Income (Entrada)</option>
                         <option value="MOVIMENTACAO">Transfer (Movimentação)</option>
+                        <option value="CARTAO">Credit Card (Cartão de Crédito)</option>
                     </Select>
                 )}
                 
@@ -136,29 +163,41 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
                 {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
 
                 {(formData.transactionType === 'SAIDA' || formData.transactionType === 'CARTAO') && (
-                     <Select name="outAccountId" label="Outcome Account" value={formData.outAccountId} onChange={handleChange}>
-                        <option value="">Select Outcome Account</option>
+                    <div>
+                     <Select name="outAccountId" label={formData.transactionType === 'CARTAO' ? "Credit Card Account" : "Outcome Account"} value={formData.outAccountId} onChange={handleChange}>
+                        <option value="">{formData.transactionType === 'CARTAO' ? "Select Credit Card" : "Select Outcome Account"}</option>
                         {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </Select>
+                    {formErrors.outAccount && <p className="text-red-500 text-xs mt-1">{formErrors.outAccount}</p>}
+                    </div>
                 )}
 
                 {formData.transactionType === 'ENTRADA' && (
+                    <div>
                      <Select name="inAccountId" label="Income Account" value={formData.inAccountId} onChange={handleChange}>
                         <option value="">Select Income Account</option>
                         {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </Select>
+                    {formErrors.inAccount && <p className="text-red-500 text-xs mt-1">{formErrors.inAccount}</p>}
+                    </div>
                 )}
 
                 {formData.transactionType === 'MOVIMENTACAO' && (
                     <>
+                        <div>
                         <Select name="outAccountId" label="Outcome Account" value={formData.outAccountId} onChange={handleChange}>
                             <option value="">Select Outcome Account</option>
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </Select>
+                        {formErrors.outAccount && <p className="text-red-500 text-xs mt-1">{formErrors.outAccount}</p>}
+                        </div>
+                        <div>
                         <Select name="inAccountId" label="Income Account" value={formData.inAccountId} onChange={handleChange}>
                             <option value="">Select Income Account</option>
                             {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                         </Select>
+                        {formErrors.inAccount && <p className="text-red-500 text-xs mt-1">{formErrors.inAccount}</p>}
+                        </div>
                     </>
                 )}
 
