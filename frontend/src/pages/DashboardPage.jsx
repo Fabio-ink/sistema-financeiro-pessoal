@@ -17,6 +17,8 @@ import { PlusCircle } from 'lucide-react';
 import api from '../services/api';
 import AccountForm from '../components/AccountForm';
 import AccountsListModal from '../components/AccountsListModal';
+import { format, subMonths, addMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -34,18 +36,30 @@ function DashboardPage() {
   const [isAccountsListModalOpen, setAccountsListModalOpen] = useState(false);
   const [accountToEdit, setAccountToEdit] = useState(null);
 
+  // Calculate dynamic months
+  const currentMonth = new Date();
+  const previousMonth = subMonths(currentMonth, 1);
+  const nextMonth = addMonths(currentMonth, 1);
+
+  const previousMonthName = format(previousMonth, 'MMMM', { locale: ptBR });
+  const currentMonthName = format(currentMonth, 'MMMM', { locale: ptBR });
+  const nextMonthName = format(nextMonth, 'MMMM', { locale: ptBR });
+
+  // Capitalize first letter
+  const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
       const [summaryRes, transRes, accountsRes, categoriesRes] = await Promise.all([
         api.get('/dashboard/summary'), 
-        api.get('/transactions'),     
+        api.get('/transactions?size=2000'),     
         api.get('/accounts'),         
         api.get('/categories')        
       ]);
       
       setMonthlySummary(summaryRes.data);
-      setAllTransactions(transRes.data);
+      setAllTransactions(transRes.data.content || []);
       setAccounts(accountsRes.data);
       setCategories(categoriesRes.data);
 
@@ -76,7 +90,7 @@ function DashboardPage() {
   const handleOpenAccountForm = useCallback((account = null) => {
     setAccountToEdit(account);
     setAccountFormModalOpen(true);
-    setAccountsListModalOpen(false); // Close list if open
+    setAccountsListModalOpen(false);
   }, []);
 
   const handleCloseAccountForm = useCallback(() => {
@@ -137,9 +151,9 @@ function DashboardPage() {
         {/* Row 1: Monthly Summaries */}
         {monthlySummary ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <MonthSummaryCard title="October" {...monthlySummary.previous} />
-            <MonthSummaryCard title="November" {...monthlySummary.current} />
-            <MonthSummaryCard title="December" {...monthlySummary.next} />
+            <MonthSummaryCard title={capitalize(previousMonthName)} {...monthlySummary.previous} />
+            <MonthSummaryCard title={capitalize(currentMonthName)} {...monthlySummary.current} />
+            <MonthSummaryCard title={capitalize(nextMonthName)} {...monthlySummary.next} />
           </div>
         ) : (
           <p className="text-gray-400">Loading monthly summaries...</p>
