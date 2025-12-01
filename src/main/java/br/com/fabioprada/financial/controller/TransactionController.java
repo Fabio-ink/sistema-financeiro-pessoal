@@ -6,7 +6,12 @@ import br.com.fabioprada.financial.service.TransactionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
+
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -19,13 +24,16 @@ public class TransactionController {
     }
 
     @GetMapping
-    public List<Transaction> listAll(
+    public Page<Transaction> listAll(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) String transactionType) {
-        return transactionService.searchTransactions(name, startDate, endDate, categoryId, transactionType);
+            @RequestParam(required = false) String transactionType,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("creationDate").descending());
+        return transactionService.searchTransactions(name, startDate, endDate, categoryId, transactionType, pageable);
     }
 
     @PostMapping
