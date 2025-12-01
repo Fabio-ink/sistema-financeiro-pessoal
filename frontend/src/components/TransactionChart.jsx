@@ -37,12 +37,14 @@ const TransactionChart = ({ transactions }) => {
         const groupedByDate = filteredTransactions.reduce((acc, t) => {
             const date = new Date(t.creationDate).toLocaleDateString('pt-BR');
             if (!acc[date]) {
-                acc[date] = { date, income: 0, expense: 0, rawDate: new Date(t.creationDate) };
+                acc[date] = { date, income: 0, expense: 0, transfer: 0, rawDate: new Date(t.creationDate) };
             }
             if (t.transactionType === 'ENTRADA') {
                 acc[date].income += t.amount;
-            } else if (t.transactionType === 'SAIDA') {
+            } else if (t.transactionType === 'SAIDA' || t.transactionType === 'CARTAO') {
                 acc[date].expense += t.amount;
+            } else if (t.transactionType === 'MOVIMENTACAO') {
+                acc[date].transfer += t.amount;
             }
             return acc;
         }, {});
@@ -51,12 +53,20 @@ const TransactionChart = ({ transactions }) => {
         const sortedDates = Object.values(groupedByDate).sort((a, b) => a.rawDate - b.rawDate);
 
         // 3. Calculate cumulative balance
-        let cumulativeBalance = 0;
+        let cumulativeIncome = 0;
+        let cumulativeExpense = 0;
+        let cumulativeTransfer = 0;
+
         return sortedDates.map(item => {
-            cumulativeBalance += (item.income - item.expense);
+            cumulativeIncome += item.income;
+            cumulativeExpense += item.expense;
+            cumulativeTransfer += item.transfer;
+            
             return {
                 ...item,
-                balance: cumulativeBalance
+                income: cumulativeIncome,
+                expense: cumulativeExpense,
+                transfer: cumulativeTransfer
             };
         });
     }, [transactions, timeRange]);
@@ -135,11 +145,11 @@ const TransactionChart = ({ transactions }) => {
                             activeDot={{ r: 6, fill: '#10B981', stroke: '#fff' }}
                         />
 
-                        {/* Movimentações (Balance) - Purple */}
+                        {/* Movimentações (Transferências) - Purple */}
                         <Line 
                             name="Movimentações"
                             type="linear" 
-                            dataKey="balance" 
+                            dataKey="transfer" 
                             stroke="#8B5CF6" 
                             strokeWidth={2} 
                             dot={false}
