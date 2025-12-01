@@ -42,4 +42,10 @@ public class CategoryController {
                     return ResponseEntity.ok().build();
                 }).orElse(ResponseEntity.notFound().build());
     }
+
+    @PostMapping("/delete-multiple")
+    public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
+        categoryService.deleteMultiple(ids);
+        return ResponseEntity.ok().build();
+    }
 }

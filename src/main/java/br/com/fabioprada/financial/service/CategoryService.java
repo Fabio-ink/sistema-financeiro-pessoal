@@ -11,7 +11,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional
 @SuppressWarnings("null")
 public class CategoryService {
 
@@ -63,6 +66,20 @@ public class CategoryService {
             if (userId != null) {
                 categoryRepository.findByIdAndUserId(id, Objects.requireNonNull(userId))
                         .ifPresent(categoryRepository::delete);
+            }
+        }
+    }
+
+    public void deleteMultiple(List<Long> ids) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof User) {
+            User user = (User) principal;
+            Long userId = user.getId();
+            if (userId != null) {
+                for (Long id : ids) {
+                    categoryRepository.findByIdAndUserId(id, Objects.requireNonNull(userId))
+                            .ifPresent(categoryRepository::delete);
+                }
             }
         }
     }
