@@ -3,6 +3,7 @@ import api from '../services/api';
 
 export function useCrud(endpoint) {
   const [items, setItems] = useState([]);
+  const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -10,7 +11,20 @@ export function useCrud(endpoint) {
     try {
       setLoading(true);
       const response = await api.get(endpoint, { params });
-      setItems(response.data);
+      if (response.data.content && Array.isArray(response.data.content)) {
+        setItems(response.data.content);
+        setPagination({
+          totalPages: response.data.totalPages,
+          totalElements: response.data.totalElements,
+          number: response.data.number,
+          size: response.data.size,
+          first: response.data.first,
+          last: response.data.last
+        });
+      } else {
+        setItems(response.data);
+        setPagination(null);
+      }
       setError(null);
     } catch (err) {
       console.error(`Error fetching ${endpoint}:`, err);
@@ -84,5 +98,5 @@ export function useCrud(endpoint) {
     return null;
   }, [endpoint]);
 
-  return { items, loading, error, addItem, updateItem, deleteItem, deleteMultipleItems, fetchItems };
+  return { items, loading, error, addItem, updateItem, deleteItem, deleteMultipleItems, fetchItems, pagination };
 }
