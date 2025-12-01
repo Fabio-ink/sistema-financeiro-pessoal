@@ -1,74 +1,80 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCrud } from '../hooks/useCrud';
+import { useTransactionFilters } from '../hooks/useTransactionFilters';
+import { useToast } from '../contexts/ToastContext';
 import TransactionForm from '../components/TransactionForm';
 import Button from '../components/ui/Button';
 import PageTitle from '../components/ui/PageTitle';
-import Card from '../components/ui/Card';
-import Spinner from '../components/Spinner';
-import ErrorMessage from '../components/ErrorMessage';
 import Modal from '../components/ui/Modal';
-import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import MonthlyPlanningPage from './MonthlyPlanningPage';
-import Checkbox from '../components/ui/Checkbox';
+import TransactionFilters from '../components/transactions/TransactionFilters';
+import TransactionTable from '../components/transactions/TransactionTable';
+import { formatCurrency } from '../utils/dateUtils';
 
 function TransactionsPage() {
-    const { items: transactions, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/transactions');
+    const { items: transactions, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems, pagination } = useCrud('/transactions');
     const { items: categories, fetchItems: fetchCategories } = useCrud('/categories');
     const { items: accounts, fetchItems: fetchAccounts } = useCrud('/accounts');
+    
+    const { filters, handleChange, clearFilters, getFilterParams } = useTransactionFilters();
+    const { addToast } = useToast();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [selectedTransactions, setSelectedTransactions] = useState(new Set());
     const [activeTab, setActiveTab] = useState('transactions'); // 'transactions' or 'planning'
-
-    // Filter states
-    const [filterName, setFilterName] = useState('');
-    const [filterStartDate, setFilterStartDate] = useState('');
-    const [filterEndDate, setFilterEndDate] = useState('');
-    const [filterCategory, setFilterCategory] = useState('');
-    const [filterType, setFilterType] = useState('');
+    
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
 
     useEffect(() => {
         fetchCategories();
         fetchAccounts();
-        fetchItems({}); // Initial fetch without filters
-    }, [fetchCategories, fetchAccounts, fetchItems]);
+        fetchItems({ page, size: pageSize }); // Initial fetch without filters but with pagination
+    }, [fetchCategories, fetchAccounts, fetchItems, page, pageSize]);
 
     const handleApplyFilters = () => {
-        const params = {};
-        if (filterName) params.name = filterName;
-        if (filterStartDate) params.startDate = filterStartDate;
-        if (filterEndDate) params.endDate = filterEndDate;
-        if (filterCategory) params.categoryId = filterCategory;
-        if (filterType) params.transactionType = filterType;
+        const params = getFilterParams();
+        params.page = 0; // Reset to first page when filtering
+        params.size = pageSize;
+        setPage(0); // Update local state
         fetchItems(params);
     };
 
     const handleClearFilters = () => {
-        setFilterName('');
-        setFilterStartDate('');
-        setFilterEndDate('');
-        setFilterCategory('');
-        setFilterType('');
-        fetchItems({}); // Fetch all items without filters
+        clearFilters();
+        setPage(0);
+        fetchItems({ page: 0, size: pageSize }); // Fetch all items without filters
     };
 
     const handleSave = async (transactionData) => {
-        if (selectedTransaction) {
-            await updateItem(selectedTransaction.id, transactionData);
-        } else {
-            await addItem(transactionData);
+        try {
+            if (selectedTransaction) {
+                await updateItem(selectedTransaction.id, transactionData);
+                addToast({ type: 'success', title: 'Sucesso', message: 'Transação atualizada com sucesso!' });
+            } else {
+                await addItem(transactionData);
+                addToast({ type: 'success', title: 'Sucesso', message: 'Transação criada com sucesso!' });
+            }
+            setIsModalOpen(false);
+            setSelectedTransaction(null);
+            handleApplyFilters(); // Re-apply filters after save
+        } catch (error) {
+            addToast({ type: 'error', title: 'Erro', message: 'Erro ao salvar transação.' });
         }
-        setIsModalOpen(false);
-        setSelectedTransaction(null);
-        handleApplyFilters(); // Re-apply filters after save
     };
 
     const handleDeleteSelected = async () => {
-        await deleteMultipleItems(Array.from(selectedTransactions));
-        setSelectedTransactions(new Set());
-        handleApplyFilters(); // Re-apply filters after delete
+        try {
+            await deleteMultipleItems(Array.from(selectedTransactions));
+            setSelectedTransactions(new Set());
+            handleApplyFilters(); // Re-apply filters after delete
+            addToast({ type: 'success', title: 'Sucesso', message: 'Transações excluídas com sucesso!' });
+        } catch (error) {
+            addToast({ type: 'error', title: 'Erro', message: 'Erro ao excluir transações.' });
+        }
     };
 
     const handleSelect = (transactionId) => {
@@ -91,10 +97,12 @@ function TransactionsPage() {
         }
     };
 
-    const isAllSelected = useMemo(() => 
-        transactions.length > 0 && selectedTransactions.size === transactions.length,
-        [selectedTransactions.size, transactions.length]
-    );
+    const pageTotal = useMemo(() => {
+        return transactions.reduce((acc, t) => {
+            const isExpense = t.transactionType === 'SAIDA' || t.transactionType === 'CARTAO';
+            return acc + (isExpense ? -t.amount : t.amount);
+        }, 0);
+    }, [transactions]);
 
     return (
         <div className="container mx-auto">
@@ -133,120 +141,79 @@ function TransactionsPage() {
             </div>
 
             {activeTab === 'transactions' && (
-                <Card className="mb-6 p-4">
-                    <PageTitle level={3} className="mb-4">Filtrar Transações</PageTitle>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <Input 
-                            label="Nome"
-                            type="text"
-                            value={filterName}
-                            onChange={(e) => setFilterName(e.target.value)}
-                            placeholder="Filtrar por nome"
-                        />
-                        <Input 
-                            label="Data Início"
-                            type="date"
-                            value={filterStartDate}
-                            onChange={(e) => setFilterStartDate(e.target.value)}
-                        />
-                        <Input 
-                            label="Data Fim"
-                            type="date"
-                            value={filterEndDate}
-                            onChange={(e) => setFilterEndDate(e.target.value)}
-                        />
-                        <Select
-                            label="Categoria"
-                            value={filterCategory}
-                            onChange={(e) => setFilterCategory(e.target.value)}
-                        >
-                            <option value="">Todas as Categorias</option>
-                            {categories.map(category => (
-                                <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                        </Select>
-                        <Select
-                            label="Tipo"
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                        >
-                            <option value="">Todos os Tipos</option>
-                            <option value="ENTRADA">Receita</option>
-                            <option value="SAIDA">Despesa</option>
-                            <option value="MOVIMENTACAO">Transferência</option>
-                        </Select>
-                    </div>
-                    <div className="flex justify-end gap-2 mt-4">
-                        <Button variant="secondary" onClick={handleClearFilters}>Limpar Filtros</Button>
-                        <Button variant="primary" onClick={handleApplyFilters}>Aplicar Filtros</Button>
-                    </div>
-                </Card>
+                <TransactionFilters 
+                    filters={filters}
+                    onChange={handleChange}
+                    onApply={handleApplyFilters}
+                    onClear={handleClearFilters}
+                    categories={categories}
+                />
             )}
 
             {activeTab === 'transactions' ? (
-                loading ? (
-                    <Spinner />
-                ) : error ? (
-                    <ErrorMessage message={error} />
-                ) : (
-                    <Card className="overflow-hidden">
-                        {transactions.length > 0 ? (
-                            <table className="min-w-full leading-normal">
-                                <thead>
-                                    <tr>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                                            <Checkbox id="selectAllTransactions" checked={isAllSelected} onChange={handleSelectAll} />
-                                        </th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Nome</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Valor</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Categoria</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Conta</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Data</th>
-                                        <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-700"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white dark:bg-gray-800">
-                                    {transactions.map(t => (
-                                        <tr key={t.id} className={`dark:bg-gray-800 ${selectedTransactions.has(t.id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                                <Checkbox id={`transaction-${t.id}`} checked={selectedTransactions.has(t.id)} onChange={() => handleSelect(t.id)} />
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                                <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.name}</p>
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                                <p className={`whitespace-no-wrap ${t.transactionType === 'SAIDA' ? 'text-red-600' : 'text-green-600'}`}>
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount)}
-                                                </p>
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                                <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.category?.name || 'N/A'}</p>
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                                <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{t.outAccount?.name || t.inAccount?.name || 'N/A'}</p>
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm">
-                                                <p className="text-gray-900 dark:text-gray-200 whitespace-no-wrap">{new Date(t.creationDate).toLocaleDateString('pt-BR')}</p>
-                                            </td>
-                                            <td className="px-5 py-5 border-b border-gray-200 dark:border-gray-700 text-sm text-right">
-                                                <Button 
-                                                    variant="warning"
-                                                    size="sm"
-                                                    onClick={() => { setSelectedTransaction(t); setIsModalOpen(true); }}>Editar</Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        ) : (
-                            <div className="text-center p-6">
-                                <p className="text-gray-500 dark:text-gray-400">Nenhuma transação encontrada. Clique em '+ Nova Transação' para adicionar uma.</p>
-                            </div>
-                        )}
-                    </Card>
-                )
+                <TransactionTable 
+                    transactions={transactions}
+                    selectedTransactions={selectedTransactions}
+                    onSelect={handleSelect}
+                    onSelectAll={handleSelectAll}
+                    onEdit={(t) => { setSelectedTransaction(t); setIsModalOpen(true); }}
+                    loading={loading}
+                    error={error}
+                />
             ) : (
                 <MonthlyPlanningPage categories={categories} />
+            )}
+
+            {activeTab === 'transactions' && pagination && (
+                <div className="flex flex-col md:flex-row justify-between items-center mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow gap-4">
+                    <div className="flex items-center w-full md:w-auto">
+                        <Select
+                            label="Itens por página"
+                            value={pageSize}
+                            onChange={(e) => {
+                                setPageSize(Number(e.target.value));
+                                setPage(0); // Reset to first page
+                            }}
+                            className="w-full md:w-48"
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </Select>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Total desta página</span>
+                        <span className={`text-lg font-bold ${pageTotal < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            {formatCurrency(pageTotal)}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
+                        <span className="text-sm text-gray-700 dark:text-gray-300 mr-2">
+                            Página {pagination.number + 1} de {pagination.totalPages}
+                        </span>
+                        <div className="inline-flex rounded-md shadow-sm gap-2">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setPage(p => Math.max(0, p - 1))}
+                                disabled={pagination.first}
+                            >
+                                Anterior
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setPage(p => Math.min(pagination.totalPages - 1, p + 1))}
+                                disabled={pagination.last}
+                            >
+                                Próxima
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             <Modal isOpen={isModalOpen} onCancel={() => setIsModalOpen(false)}>
