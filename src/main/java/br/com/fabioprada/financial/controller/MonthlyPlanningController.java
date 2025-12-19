@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @RestController
 @RequestMapping("/api/monthly-planning")
 public class MonthlyPlanningController {
@@ -16,8 +19,12 @@ public class MonthlyPlanningController {
     private MonthlyPlanningService monthlyPlanningService;
 
     @GetMapping
-    public List<MonthlyPlanning> getAllMonthlyPlanning() {
-        return monthlyPlanningService.findAll();
+    public Page<MonthlyPlanning> getAllMonthlyPlanning(
+            Pageable pageable,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Long categoryId) {
+        return monthlyPlanningService.findAll(pageable, month, year, categoryId);
     }
 
     @GetMapping("/{id}")

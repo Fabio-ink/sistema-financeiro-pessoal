@@ -1,15 +1,17 @@
 package br.com.fabioprada.financial.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "categorias", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"name", "user_id"})
+        @UniqueConstraint(columnNames = { "name", "user_id" })
 })
 @Getter
 @Setter
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,15 +1,12 @@
-import React from 'react';
 import { Edit2, Trash2 } from 'lucide-react';
+import { formatDate } from '../utils/dateUtils';
+import IconButton from './ui/IconButton';
 
 const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 };
 
-const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR').format(date);
-};
+// formatDate is imported from utils
 
 function TransactionList({ transactions, onEdit, onDelete }) {
     if (!transactions || transactions.length === 0) {
@@ -48,20 +45,20 @@ function TransactionList({ transactions, onEdit, onDelete }) {
                         </span>
                         
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
+                            <IconButton 
                                 onClick={() => onEdit(transaction)}
-                                className="p-2 text-text-secondary hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+                                color="primary"
                                 title="Editar"
                             >
                                 <Edit2 size={16} />
-                            </button>
-                            <button 
+                            </IconButton>
+                            <IconButton 
                                 onClick={() => onDelete && onDelete(transaction)}
-                                className="p-2 text-text-secondary hover:text-brand-danger hover:bg-brand-danger/10 rounded-lg transition-colors"
+                                color="danger"
                                 title="Excluir"
                             >
                                 <Trash2 size={16} />
-                            </button>
+                            </IconButton>
                         </div>
                     </div>
                 </div>

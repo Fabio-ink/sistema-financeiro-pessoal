@@ -14,17 +14,17 @@ import java.math.BigDecimal;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long>, JpaSpecificationExecutor<Transaction> {
 
-    @Query("SELECT t FROM Transaction t WHERE YEAR(t.creationDate) = :year AND MONTH(t.creationDate) = :month AND t.user.id = :userId")
-    List<Transaction> findByYearAndMonth(@Param("year") int year, @Param("month") int month,
-            @Param("userId") @NonNull Long userId);
+        @Query("SELECT t FROM Transaction t WHERE YEAR(t.creationDate) = :year AND MONTH(t.creationDate) = :month AND t.user.id = :userId")
+        List<Transaction> findByYearAndMonth(@Param("year") int year, @Param("month") int month,
+                        @Param("userId") @NonNull Long userId);
 
-    @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.category.id = :categoryId AND YEAR(t.creationDate) = :year AND MONTH(t.creationDate) = :month AND t.user.id = :userId AND t.transactionType = 'SAIDA'")
-    BigDecimal sumAmountByCategoryIdAndYearAndMonthAndUserId(@Param("categoryId") Long categoryId,
-            @Param("year") int year, @Param("month") int month, @Param("userId") Long userId);
+        @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.category.id = :categoryId AND YEAR(t.creationDate) = :year AND MONTH(t.creationDate) = :month AND t.user.id = :userId AND (t.transactionType = 'SAIDA' OR t.transactionType = 'MOVIMENTACAO')")
+        BigDecimal sumAmountByCategoryIdAndYearAndMonthAndUserId(@Param("categoryId") Long categoryId,
+                        @Param("year") int year, @Param("month") int month, @Param("userId") Long userId);
 
-    List<Transaction> findAllByUserId(@NonNull Long userId);
+        List<Transaction> findAllByUserId(@NonNull Long userId);
 
-    Optional<Transaction> findByIdAndUserId(@NonNull Long id, @NonNull Long userId);
+        Optional<Transaction> findByIdAndUserId(@NonNull Long id, @NonNull Long userId);
 
-    void deleteByIdAndUserId(@NonNull Long id, @NonNull Long userId);
+        void deleteByIdAndUserId(@NonNull Long id, @NonNull Long userId);
 }

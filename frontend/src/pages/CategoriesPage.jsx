@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCrud } from '../hooks/useCrud';
+import { useSelection } from '../hooks/useSelection';
 import PageTitle from '../components/ui/PageTitle';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -12,7 +13,8 @@ function CategoriesPage() {
   const { items: categories, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/categories');
   const [name, setName] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
-  const [selectedCategories, setSelectedCategories] = useState(new Set());
+  
+  const { selectedItems: selectedCategories, handleSelect, handleSelectAll, clearSelection, isAllSelected } = useSelection(categories);
 
   useEffect(() => {
     fetchItems();
@@ -39,33 +41,8 @@ function CategoriesPage() {
 
   const handleDeleteSelected = async () => {
     await deleteMultipleItems(Array.from(selectedCategories));
-    setSelectedCategories(new Set());
+    clearSelection();
   };
-
-  const handleSelect = (categoryId) => {
-    setSelectedCategories(prev => {
-        const newSelected = new Set(prev);
-        if (newSelected.has(categoryId)) {
-            newSelected.delete(categoryId);
-        } else {
-            newSelected.add(categoryId);
-        }
-        return newSelected;
-    });
-  };
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-        setSelectedCategories(new Set(categories.map(c => c.id)));
-    } else {
-        setSelectedCategories(new Set());
-    }
-  };
-
-  const isAllSelected = useMemo(() => 
-    categories.length > 0 && selectedCategories.size === categories.length,
-    [selectedCategories.size, categories.length]
-  );
 
   const cancelEdit = () => {
     setEditingCategory(null);
@@ -87,7 +64,7 @@ function CategoriesPage() {
 
       <Card as="form" onSubmit={handleSubmit} className="mb-8 p-4">
         <div className="flex items-end gap-4">
-          <div className="flex-grow">
+          <div className="grow">
             <Input
               id="category-name"
               label="Nome da Categoria"
@@ -122,7 +99,7 @@ function CategoriesPage() {
                 </div>
                 {categories.map(cat => (
                   <Card key={cat.id} className={`flex justify-between items-center p-3 ${selectedCategories.has(cat.id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}>
-                    <div class="flex items-center">
+                    <div className="flex items-center">
                         <Checkbox id={`category-${cat.id}`} checked={selectedCategories.has(cat.id)} onChange={() => handleSelect(cat.id)} />
                         <span className="font-semibold text-gray-800 dark:text-gray-200 ml-2">{cat.name}</span>
                     </div>

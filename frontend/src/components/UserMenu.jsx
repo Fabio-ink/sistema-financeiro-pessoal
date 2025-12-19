@@ -39,7 +39,7 @@ function UserMenu() {
     <div className="relative" ref={ref}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center text-white font-semibold"
+        className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center text-white font-semibold cursor-pointer hover:bg-brand-primary/80 transition-colors shadow-lg hover:ring-2 hover:ring-brand-primary/50"
       >
         {getInitials()}
       </button>
@@ -56,13 +56,13 @@ function UserMenu() {
                 setIsOpen(false);
                 navigate('/profile');
               }}
-              className="flex items-center gap-3 p-2 rounded-md hover:bg-brand-secondary text-gray-300 w-full text-left"
+              className="flex items-center gap-3 p-2 rounded-md hover:bg-white/10 text-gray-300 w-full text-left cursor-pointer transition-colors"
             >
               <User size={16} /> Meus Dados
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 p-2 rounded-md hover:bg-brand-secondary text-brand-red w-full text-left"
+              className="flex items-center gap-3 p-2 rounded-md hover:bg-red-500/10 text-brand-red w-full text-left cursor-pointer transition-colors hover:text-red-400"
             >
               <LogOut size={16} /> Logout
             </button>

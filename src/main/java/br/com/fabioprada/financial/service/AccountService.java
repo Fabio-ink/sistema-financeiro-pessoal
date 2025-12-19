@@ -3,7 +3,7 @@ package br.com.fabioprada.financial.service;
 import br.com.fabioprada.financial.model.Account;
 import br.com.fabioprada.financial.model.User;
 import br.com.fabioprada.financial.repository.AccountRepository;
-import org.springframework.security.core.context.SecurityContextHolder;
+import br.com.fabioprada.financial.security.UserContextService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,74 +17,52 @@ import java.util.Optional;
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final UserContextService userContextService;
 
-    public AccountService(AccountRepository accountRepository) {
+    public AccountService(AccountRepository accountRepository, UserContextService userContextService) {
         this.accountRepository = accountRepository;
+        this.userContextService = userContextService;
     }
 
     public List<Account> findAll() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof User) {
-            User user = (User) principal;
-            Long userId = user.getId();
-            if (userId != null) {
-                return accountRepository.findAllByUserId(Objects.requireNonNull(userId));
-            }
-        }
-        return Collections.emptyList();
+        return userContextService.getCurrentUser()
+                .map(user -> accountRepository.findAllByUserId(user.getId()))
+                .orElse(Collections.emptyList());
     }
 
     public Optional<Account> findById(Long id) {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof User) {
-            User user = (User) principal;
-            Long userId = user.getId();
-            if (userId != null) {
-                return accountRepository.findByIdAndUserId(id, Objects.requireNonNull(userId));
-            }
-        }
-        return Optional.empty();
+        return userContextService.getCurrentUser()
+                .flatMap(user -> accountRepository.findByIdAndUserId(id, user.getId()));
     }
 
     public Account save(Account account) {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof User) {
-            User user = (User) principal;
-            account.setUser(user);
+        User user = userContextService.getCurrentUserOrThrow();
+        account.setUser(user);
 
-            if (account.getId() != null) {
-                // Existing account, adjust current balance based on initial balance change
-                Account existingAccount = accountRepository.findById(account.getId())
-                        .orElseThrow(() -> new RuntimeException("Account not found with id: " + account.getId()));
+        if (account.getId() != null) {
+            // Existing account, adjust current balance based on initial balance change
+            Account existingAccount = accountRepository.findById(account.getId())
+                    .orElseThrow(() -> new RuntimeException("Account not found with id: " + account.getId()));
 
-                BigDecimal oldInitialBalance = existingAccount.getInitialBalance();
-                BigDecimal newInitialBalance = account.getInitialBalance();
+            BigDecimal oldInitialBalance = existingAccount.getInitialBalance();
+            BigDecimal newInitialBalance = account.getInitialBalance();
 
-                if (oldInitialBalance.compareTo(newInitialBalance) != 0) {
-                    BigDecimal difference = newInitialBalance.subtract(oldInitialBalance);
-                    account.setCurrentBalance(existingAccount.getCurrentBalance().add(difference));
-                } else {
-                    account.setCurrentBalance(existingAccount.getCurrentBalance());
-                }
+            if (oldInitialBalance.compareTo(newInitialBalance) != 0) {
+                BigDecimal difference = newInitialBalance.subtract(oldInitialBalance);
+                account.setCurrentBalance(existingAccount.getCurrentBalance().add(difference));
             } else {
-                // New account, set current balance to initial balance
-                account.setCurrentBalance(account.getInitialBalance());
+                account.setCurrentBalance(existingAccount.getCurrentBalance());
             }
-
-            return accountRepository.save(account);
+        } else {
+            // New account, set current balance to initial balance
+            account.setCurrentBalance(account.getInitialBalance());
         }
-        throw new IllegalStateException("User not authenticated, cannot save account.");
+
+        return accountRepository.save(account);
     }
 
     public void deleteById(Long id) {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof User) {
-            User user = (User) principal;
-            Long userId = user.getId();
-            if (userId != null) {
-                accountRepository.findByIdAndUserId(id, Objects.requireNonNull(userId))
-                        .ifPresent(accountRepository::delete);
-            }
-        }
+        userContextService.getCurrentUser().ifPresent(user -> accountRepository.findByIdAndUserId(id, user.getId())
+                .ifPresent(accountRepository::delete));
     }
 }
