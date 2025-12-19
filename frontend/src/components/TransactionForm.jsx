@@ -5,12 +5,18 @@ import Select from './ui/Select';
 import PageTitle from './ui/PageTitle';
 
 import DatePicker from './ui/DatePicker';
+const getTodayLocalDateString = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 function TransactionForm({ transaction, onSave, onCancel, categories, accounts }) {
     const [formData, setFormData] = useState({
         name: '',
         amount: '',
-        creationDate: new Date().toISOString().split('T')[0],
+        // Initialize with local date string YYYY-MM-DD
+        // Initialize with local date string YYYY-MM-DD
+        creationDate: getTodayLocalDateString(),
         transactionType: 'SAIDA',
         categoryId: '',
         outAccountId: '',
@@ -25,7 +31,11 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
             setFormData({
                 name: transaction.name || '',
                 amount: transaction.amount || '',
-                creationDate: transaction.creationDate ? new Date(transaction.creationDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                creationDate: transaction.creationDate ? (() => {
+                    // Start of day in local time from the UTC string provided by backend or ensure YYYY-MM-DD
+                    // Assuming transaction.creationDate is YYYY-MM-DD string based on current usage.
+                    return transaction.creationDate.split('T')[0];
+                })() : getTodayLocalDateString(),
                 transactionType: transaction.transactionType || 'SAIDA',
                 categoryId: transaction.category?.id || '',
                 outAccountId: transaction.outAccount?.id || '',
@@ -36,7 +46,7 @@ function TransactionForm({ transaction, onSave, onCancel, categories, accounts }
             setFormData({
                 name: '',
                 amount: '',
-                creationDate: new Date().toISOString().split('T')[0],
+                creationDate: getTodayLocalDateString(),
                 transactionType: 'SAIDA',
                 categoryId: '',
                 outAccountId: '',

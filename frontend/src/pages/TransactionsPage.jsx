@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useCrud } from '../hooks/useCrud';
 import { useTransactionFilters } from '../hooks/useTransactionFilters';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../hooks/useToast';
 import TransactionForm from '../components/TransactionForm';
 import Button from '../components/ui/Button';
 import PageTitle from '../components/ui/PageTitle';
@@ -28,12 +28,26 @@ function TransactionsPage() {
     // Pagination states
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
+    const [jumpToPage, setJumpToPage] = useState('');
+
+    const handleJumpToPage = (e) => {
+        if (e.key === 'Enter' || e.type === 'blur') {
+            const pageNum = parseInt(jumpToPage);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= pagination?.totalPages) {
+                setPage(pageNum - 1);
+                setJumpToPage('');
+            } else if (jumpToPage !== '') {
+                 setJumpToPage(''); 
+            }
+        }
+    };
 
     useEffect(() => {
         fetchCategories();
         fetchAccounts();
-        fetchItems({ page, size: pageSize }); // Initial fetch without filters but with pagination
-    }, [fetchCategories, fetchAccounts, fetchItems, page, pageSize]);
+        const params = getFilterParams();
+        fetchItems({ ...params, page, size: pageSize }); 
+    }, [fetchCategories, fetchAccounts, fetchItems, page, pageSize, getFilterParams]);
 
     const handleApplyFilters = () => {
         const params = getFilterParams();
@@ -191,6 +205,20 @@ function TransactionsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
+                        <div className="flex items-center mr-4 gap-2">
+                             <span className="text-sm text-gray-700 dark:text-gray-300">Ir para:</span>
+                             <input 
+                                type="number" 
+                                min="1" 
+                                max={pagination.totalPages}
+                                value={jumpToPage}
+                                onChange={(e) => setJumpToPage(e.target.value)}
+                                onKeyDown={handleJumpToPage}
+                                onBlur={handleJumpToPage}
+                                className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:border-brand-primary outline-none"
+                                placeholder="#"
+                             />
+                        </div>
                         <span className="text-sm text-gray-700 dark:text-gray-300 mr-2">
                             Página {pagination.number + 1} de {pagination.totalPages}
                         </span>
