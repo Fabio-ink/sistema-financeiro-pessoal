@@ -3,6 +3,7 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, en
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
+import IconButton from './IconButton';
 
 const DatePicker = ({ label, value, onChange, className = '', ...props }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +13,11 @@ const DatePicker = ({ label, value, onChange, className = '', ...props }) => {
 
   useEffect(() => {
     if (value) {
-      setSelectedDate(new Date(value));
+      // Parse YYYY-MM-DD as local time
+      const [year, month, day] = value.split('-').map(Number);
+      const newDate = new Date(year, month - 1, day);
+      setSelectedDate(newDate);
+      setCurrentMonth(newDate);
     } else {
         setSelectedDate(null);
     }
@@ -48,23 +53,25 @@ const DatePicker = ({ label, value, onChange, className = '', ...props }) => {
   const renderHeader = () => {
     return (
       <div className="flex items-center justify-between mb-4 px-2">
-        <button
-          type="button"
+        <IconButton
           onClick={prevMonth}
-          className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+          color="white"
+          size="sm"
+          className="rounded-full"
         >
           <ChevronLeft className="w-5 h-5" />
-        </button>
+        </IconButton>
         <div className="text-sm font-semibold text-white capitalize">
           {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
         </div>
-        <button
-          type="button"
+        <IconButton
           onClick={nextMonth}
-          className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+          color="white"
+          size="sm"
+          className="rounded-full"
         >
           <ChevronRight className="w-5 h-5" />
-        </button>
+        </IconButton>
       </div>
     );
   };

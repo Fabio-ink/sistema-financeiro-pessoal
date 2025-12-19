@@ -29,15 +29,30 @@ const TransactionChart = ({ transactions }) => {
         }
 
         const filteredTransactions = transactions.filter(t => {
-            const tDate = new Date(t.creationDate);
+            // Parse YYYY-MM-DD as local time
+            let tDate;
+            if (typeof t.creationDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.creationDate)) {
+                 const [year, month, day] = t.creationDate.split('-').map(Number);
+                 tDate = new Date(year, month - 1, day);
+            } else {
+                 tDate = new Date(t.creationDate);
+            }
             return tDate >= startDate && tDate <= now;
         });
 
         // 1. Group transactions by date
         const groupedByDate = filteredTransactions.reduce((acc, t) => {
-            const date = new Date(t.creationDate).toLocaleDateString('pt-BR');
+            let localDate;
+            if (typeof t.creationDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.creationDate)) {
+                 const [year, month, day] = t.creationDate.split('-').map(Number);
+                 localDate = new Date(year, month - 1, day);
+            } else {
+                 localDate = new Date(t.creationDate);
+            }
+            
+            const date = localDate.toLocaleDateString('pt-BR');
             if (!acc[date]) {
-                acc[date] = { date, income: 0, expense: 0, transfer: 0, rawDate: new Date(t.creationDate) };
+                acc[date] = { date, income: 0, expense: 0, transfer: 0, rawDate: localDate };
             }
             if (t.transactionType === 'ENTRADA') {
                 acc[date].income += t.amount;

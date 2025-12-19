@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCrud } from '../hooks/useCrud';
+import { useSelection } from '../hooks/useSelection';
 import PageTitle from '../components/ui/PageTitle';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -13,7 +14,8 @@ function AccountsPage() {
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('');
   const [editingAccount, setEditingAccount] = useState(null);
-  const [selectedAccounts, setSelectedAccounts] = useState(new Set());
+  
+  const { selectedItems: selectedAccounts, handleSelect, handleSelectAll, clearSelection, isAllSelected } = useSelection(accounts);
 
   useEffect(() => {
     fetchItems();
@@ -42,33 +44,8 @@ function AccountsPage() {
 
   const handleDeleteSelected = async () => {
     await deleteMultipleItems(Array.from(selectedAccounts));
-    setSelectedAccounts(new Set());
+    clearSelection();
   };
-
-  const handleSelect = (accountId) => {
-    setSelectedAccounts(prev => {
-        const newSelected = new Set(prev);
-        if (newSelected.has(accountId)) {
-            newSelected.delete(accountId);
-        } else {
-            newSelected.add(accountId);
-        }
-        return newSelected;
-    });
-  };
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-        setSelectedAccounts(new Set(accounts.map(a => a.id)));
-    } else {
-        setSelectedAccounts(new Set());
-    }
-  };
-
-  const isAllSelected = useMemo(() => 
-    accounts.length > 0 && selectedAccounts.size === accounts.length,
-    [selectedAccounts.size, accounts.length]
-  );
   
   const cancelEdit = () => {
     setEditingAccount(null);
