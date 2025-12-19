@@ -7,10 +7,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @Service
 @Transactional
@@ -26,14 +30,30 @@ public class MonthlyPlanningService {
         this.transactionRepository = transactionRepository;
     }
 
-    public List<MonthlyPlanning> findAll() {
+    public Page<MonthlyPlanning> findAll(Pageable pageable, Integer month, Integer year, Long categoryId) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof User) {
             User user = (User) principal;
             Long userId = user.getId();
             if (userId != null) {
-                List<MonthlyPlanning> plans = monthlyPlanningRepository.findAllByUserId(Objects.requireNonNull(userId));
-                for (MonthlyPlanning plan : plans) {
+                Specification<MonthlyPlanning> spec = (root, query, criteriaBuilder) -> {
+                    Predicate p = criteriaBuilder.equal(root.get("user").get("id"), userId);
+
+                    if (month != null) {
+                        p = criteriaBuilder.and(p, criteriaBuilder.equal(root.get("month"), month));
+                    }
+                    if (year != null) {
+                        p = criteriaBuilder.and(p, criteriaBuilder.equal(root.get("year"), year));
+                    }
+                    if (categoryId != null) {
+                        p = criteriaBuilder.and(p, criteriaBuilder.equal(root.get("category").get("id"), categoryId));
+                    }
+                    return p;
+                };
+
+                Page<MonthlyPlanning> page = monthlyPlanningRepository.findAll(spec, pageable);
+
+                return page.map(plan -> {
                     if (plan.getCategory() != null) {
                         java.math.BigDecimal spent = transactionRepository
                                 .sumAmountByCategoryIdAndYearAndMonthAndUserId(
@@ -45,11 +65,11 @@ public class MonthlyPlanningService {
                     } else {
                         plan.setSpentAmount(java.math.BigDecimal.ZERO);
                     }
-                }
-                return plans;
+                    return plan;
+                });
             }
         }
-        return Collections.emptyList();
+        return Page.empty();
     }
 
     public Optional<MonthlyPlanning> findById(Long id) {

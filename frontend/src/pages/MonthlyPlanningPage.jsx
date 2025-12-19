@@ -10,8 +10,10 @@ import MonthlyPlanningFormModal from '../components/MonthlyPlanningFormModal';
 import MonthlyPlanningFilterModal from '../components/MonthlyPlanningFilterModal';
 import { Plus, Filter, Trash2 } from 'lucide-react';
 
+import Select from '../components/ui/Select';
+
 function MonthlyPlanningPage({ categories }) {
-    const { items: planningEntries, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems } = useCrud('/monthly-planning');
+    const { items: planningEntries, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems, pagination } = useCrud('/monthly-planning');
     
     // Modal states
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -20,17 +22,39 @@ function MonthlyPlanningPage({ categories }) {
 
     // Filter state
     const [filters, setFilters] = useState({
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
+        month: '',
+        year: '',
         category: ''
     });
 
-    const filteredEntries = planningEntries.filter(entry => {
-        const matchMonth = filters.month ? entry.month === parseInt(filters.month) : true;
-        const matchYear = filters.year ? entry.year === parseInt(filters.year) : true;
-        const matchCategory = filters.category ? entry.category?.id === parseInt(filters.category) : true;
-        return matchMonth && matchYear && matchCategory;
-    });
+    // Pagination states
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const [jumpToPage, setJumpToPage] = useState('');
+
+    useEffect(() => {
+        const params = {
+            page,
+            size: pageSize,
+            month: filters.month || undefined,
+            year: filters.year || undefined,
+            categoryId: filters.category || undefined
+        };
+        fetchItems(params);
+    }, [fetchItems, page, pageSize, filters]);
+
+    const handleJumpToPage = (e) => {
+        if (e.key === 'Enter' || e.type === 'blur') {
+            const pageNum = parseInt(jumpToPage);
+            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= pagination?.totalPages) {
+                setPage(pageNum - 1);
+                setJumpToPage('');
+            } else if (jumpToPage !== '') {
+                // Optional: show error or reset
+                setJumpToPage(''); 
+            }
+        }
+    };
 
     const [selectedPlanningEntries, setSelectedPlanningEntries] = useState(new Set());
 
@@ -66,9 +90,8 @@ function MonthlyPlanningPage({ categories }) {
         [selectedPlanningEntries.size, planningEntries.length]
     );
 
-    useEffect(() => {
-        fetchItems(); // Fetch planning entries on mount
-    }, [fetchItems]);
+    // Removed initial fetchItems useEffect as it is handled by the pagination useEffect
+
 
     const handleOpenCreateModal = () => {
         setEditingEntry(null);
@@ -183,9 +206,9 @@ function MonthlyPlanningPage({ categories }) {
                         </div>
                     )}
 
-                    {filteredEntries.length > 0 ? (
+                    {planningEntries.length > 0 ? (
                         <div className="grid gap-4">
-                            {filteredEntries.map(entry => {
+                            {planningEntries.map(entry => {
                                 const spent = entry.spentAmount || 0;
                                 const planned = entry.estimatedAmount || 0;
                                 const remaining = planned - spent;
@@ -272,6 +295,65 @@ function MonthlyPlanningPage({ categories }) {
                             </p>
                         </div>
                     )}
+                </div>
+            )}
+
+            {pagination && (
+                <div className="flex flex-col md:flex-row justify-between items-center mt-4 bg-brand-surface border border-brand-border p-4 rounded-lg shadow gap-4">
+                    <div className="flex items-center w-full md:w-auto">
+                        <Select
+                            label="Itens por página"
+                            value={pageSize}
+                            onChange={(e) => {
+                                setPageSize(Number(e.target.value));
+                                setPage(0); // Reset to first page
+                            }}
+                            className="w-full md:w-48"
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
+                        <div className="flex items-center mr-4 gap-2">
+                             <span className="text-sm text-gray-400">Ir para:</span>
+                             <input 
+                                type="number" 
+                                min="1" 
+                                max={pagination.totalPages}
+                                value={jumpToPage}
+                                onChange={(e) => setJumpToPage(e.target.value)}
+                                onKeyDown={handleJumpToPage}
+                                onBlur={handleJumpToPage}
+                                className="w-16 px-2 py-1 text-sm bg-brand-dark border border-brand-border rounded text-white focus:border-brand-primary outline-none"
+                                placeholder="#"
+                             />
+                        </div>
+                        <span className="text-sm text-gray-400 mr-2">
+                            Página {pagination.number + 1} de {pagination.totalPages}
+                        </span>
+                        <div className="inline-flex rounded-md shadow-sm gap-2">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setPage(p => Math.max(0, p - 1))}
+                                disabled={pagination.first}
+                            >
+                                Anterior
+                            </Button>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setPage(p => Math.min(pagination.totalPages - 1, p + 1))}
+                                disabled={pagination.last}
+                            >
+                                Próxima
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
 
