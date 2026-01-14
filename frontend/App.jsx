@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, PieChart } from 'lucide-react';
+import { LayoutDashboard, PieChart, List } from 'lucide-react';
+import { useAuth } from './src/contexts/AuthContext.jsx';
 
 import DashboardPage from './src/pages/DashboardPage.jsx';
 import AccountsPage from './src/pages/AccountsPage.jsx';
@@ -15,54 +16,87 @@ import ProtectedRoute from './src/components/ProtectedRoute.jsx';
 import UserMenu from './src/components/UserMenu.jsx';
 import UserProfilePage from './src/pages/UserProfilePage.jsx';
 
-const AppLayout = () => (
-  <div className="min-h-screen flex bg-brand-dark text-text-primary font-sans">
-    <nav className="w-72 bg-brand-card/50 border-r border-brand-border/30 p-6 flex flex-col backdrop-blur-xl">
-      <div className="flex items-center gap-3 mb-12 px-2">
-        <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center">
-            <div className="w-4 h-4 bg-white rounded-sm transform rotate-45"></div>
-        </div>
-        <div className="text-2xl font-bold tracking-tight">SyncWallet</div>
-      </div>
-      
-      <div className="flex flex-col gap-2">
-        <NavLink to="/" className={({ isActive }) => `flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${isActive ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 font-semibold' : 'text-text-secondary hover:bg-brand-card-hover hover:text-white'}`}>
-          <LayoutDashboard size={22} /> Dashboard
-        </NavLink>
-        <NavLink to="/categories" className={({ isActive }) => `flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${isActive ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 font-semibold' : 'text-text-secondary hover:bg-brand-card-hover hover:text-white'}`}>
-          <PieChart size={22} /> Categorias
-        </NavLink>
-      </div>
+const AppLayout = () => {
+  const { user } = useAuth();
 
-      <div className="mt-auto pt-8 border-t border-brand-border/30">
-        <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-primary to-brand-info flex items-center justify-center text-white font-bold">
-                F
+  const getDisplayName = (name) => {
+    if (!name) return 'Usuário';
+    const parts = name.split(' ').filter(part => part.trim() !== '');
+    if (parts.length > 1) {
+        return `${parts[0]} ${parts[parts.length - 1]}`;
+    }
+    return parts[0];
+  };
+
+  const displayName = getDisplayName(user?.name);
+  const initial = user?.name ? user.name[0].toUpperCase() : 'F';
+
+  return (
+  <div className="min-h-screen flex flex-col bg-linear-to-br from-brand-gradient-start to-brand-gradient-end text-text-primary font-sans">
+    
+    {/* Top Header - Dark, Non-Purple */}
+    <header className="h-20 shrink-0 bg-brand-dark border-b border-brand-border/30 flex items-center justify-between px-8 z-50 relative shadow-md">
+        {/* Placeholder for left balance if needed, or just standard flex */}
+        <div className="w-10"></div> 
+
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
+             {/* Logo in Center */}
+            <div className="flex flex-col items-center">
+                 <div className="text-2xl font-bold tracking-widest text-white">SYNC</div>
+                 <div className="text-xs tracking-[0.3em] text-text-secondary uppercase">wallet</div>
             </div>
-            <div>
-                <p className="text-sm font-semibold text-white">Fabio Prada</p>
-                <p className="text-xs text-text-secondary">Premium Plan</p>
-            </div>
-        </div>
-      </div>
-    </nav>
-    <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Background Glow Effect */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-brand-primary/5 rounded-full blur-[150px]"></div>
-            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-brand-info/5 rounded-full blur-[150px]"></div>
         </div>
 
-      <header className="flex-shrink-0 h-20 flex items-center justify-between px-8 z-20">
-        <h1 className="text-xl font-semibold text-white">Visão Geral</h1>
         <UserMenu />
-      </header>
-      <main className="flex-1 p-8 overflow-auto z-10 scrollbar-thin scrollbar-thumb-brand-border scrollbar-track-transparent">
-        <Outlet />
-      </main>
+    </header>
+
+    {/* Main Body Area */}
+    <div className="flex-1 flex overflow-hidden relative">
+        <nav className="w-72 bg-linear-to-b from-brand-gradient-start to-brand-gradient-end border-r border-brand-border/30 p-6 flex flex-col backdrop-blur-xl shrink-0">
+        <div className="mb-0">
+            {/* Sidebar Logo removed as it is in header now */}
+        </div>
+        
+        <div className="flex flex-col gap-2 pt-4">
+            <NavLink to="/" className={({ isActive }) => `flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${isActive ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 font-semibold' : 'text-text-secondary hover:bg-brand-card-hover hover:text-white'}`}>
+            <LayoutDashboard size={22} /> Dashboard
+            </NavLink>
+            <NavLink to="/transactions" className={({ isActive }) => `flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${isActive ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 font-semibold' : 'text-text-secondary hover:bg-brand-card-hover hover:text-white'}`}>
+            <List size={22} /> Transações
+            </NavLink>
+            <NavLink to="/categories" className={({ isActive }) => `flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 ${isActive ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 font-semibold' : 'text-text-secondary hover:bg-brand-card-hover hover:text-white'}`}>
+            <PieChart size={22} /> Categorias
+            </NavLink>
+        </div>
+
+        <div className="mt-auto pt-8 border-t border-brand-border/30">
+            <div className="flex items-center gap-3 px-2">
+                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-brand-primary to-brand-info flex items-center justify-center text-white font-bold">
+                    {initial}
+                </div>
+                <div>
+                    <p className="text-sm font-semibold text-white">{displayName}</p>
+                </div>
+            </div>
+        </div>
+        </nav>
+        
+        <main className="flex-1 p-8 overflow-auto z-10 scrollbar-thin scrollbar-thumb-brand-border scrollbar-track-transparent">
+            {/* Background Glow Effect limited to main area or global? Keep global on parent, main is transparent */}
+             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-brand-primary/5 rounded-full blur-[150px]"></div>
+                <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-brand-info/5 rounded-full blur-[150px]"></div>
+            </div>
+            
+            {/* Content Content - z-index to be above glow */}
+            <div className="relative z-10">
+                <Outlet />
+            </div>
+        </main>
     </div>
   </div>
-);
+  );
+};
 
 function App() {
   return (

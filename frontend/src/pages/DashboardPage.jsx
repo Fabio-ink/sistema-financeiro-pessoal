@@ -17,7 +17,7 @@ import { PlusCircle } from 'lucide-react';
 import api from '../services/api';
 import AccountForm from '../components/AccountForm';
 import AccountsListModal from '../components/AccountsListModal';
-import { format, subMonths, addMonths } from 'date-fns';
+import { format, subMonths, addMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 function DashboardPage() {
@@ -39,9 +39,11 @@ function DashboardPage() {
   // Calculate dynamic months
   const currentMonth = new Date();
   const previousMonth = subMonths(currentMonth, 1);
+  const previousMonth2 = subMonths(currentMonth, 2);
   const nextMonth = addMonths(currentMonth, 1);
 
   const previousMonthName = format(previousMonth, 'MMMM', { locale: ptBR });
+  const previousMonth2Name = format(previousMonth2, 'MMMM', { locale: ptBR });
   const currentMonthName = format(currentMonth, 'MMMM', { locale: ptBR });
   const nextMonthName = format(nextMonth, 'MMMM', { locale: ptBR });
 
@@ -136,6 +138,28 @@ function DashboardPage() {
     }
   }, [handleCloseAccountForm, fetchAllData]);
 
+  const handleMonthTitleClick = (date) => {
+    const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+    const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+    navigate('/transactions', { 
+        state: { 
+            activeTab: 'transactions', 
+            startDate, 
+            endDate 
+        } 
+    });
+  };
+
+  const handleMonthPlanningClick = (date) => {
+    navigate('/transactions', { 
+        state: { 
+            activeTab: 'planning', 
+            planningMonth: date.getMonth() + 1, 
+            planningYear: date.getFullYear() 
+        } 
+    });
+  };
+
   if (loading) {
     return <Spinner />;
   }
@@ -150,16 +174,38 @@ function DashboardPage() {
         
         {/* Row 1: Monthly Summaries */}
         {monthlySummary ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <MonthSummaryCard title={capitalize(previousMonthName)} {...monthlySummary.previous} />
-            <MonthSummaryCard title={capitalize(currentMonthName)} {...monthlySummary.current} />
-            <MonthSummaryCard title={capitalize(nextMonthName)} {...monthlySummary.next} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <MonthSummaryCard 
+                title={capitalize(previousMonth2Name)} 
+                {...monthlySummary.previous2} 
+                onClickTitle={() => handleMonthTitleClick(previousMonth2)}
+                onClickPercentage={() => handleMonthPlanningClick(previousMonth2)}
+            />
+            <MonthSummaryCard 
+                title={capitalize(previousMonthName)} 
+                {...monthlySummary.previous} 
+                onClickTitle={() => handleMonthTitleClick(previousMonth)}
+                onClickPercentage={() => handleMonthPlanningClick(previousMonth)}
+            />
+            <MonthSummaryCard 
+                title={capitalize(currentMonthName)} 
+                {...monthlySummary.current} 
+                className="border-brand-primary border-2 shadow-brand-primary/20 shadow-xl"
+                onClickTitle={() => handleMonthTitleClick(currentMonth)}
+                onClickPercentage={() => handleMonthPlanningClick(currentMonth)}
+            />
+            <MonthSummaryCard 
+                title={capitalize(nextMonthName)} 
+                {...monthlySummary.next} 
+                onClickTitle={() => handleMonthTitleClick(nextMonth)}
+                onClickPercentage={() => handleMonthPlanningClick(nextMonth)}
+            />
           </div>
         ) : (
           <p className="text-gray-400">Loading monthly summaries...</p>
         )}
         
-        {/* Row 2: Chart & Actions */}
+        {/* Row 2: Chart & Actions/Accounts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto">
           {/* Chart (2/3) */}
           <div className="lg:col-span-2 min-h-[400px]">
@@ -177,71 +223,31 @@ function DashboardPage() {
             </Card>
           </div>
 
-          {/* Actions (1/3) */}
-          <div className="lg:col-span-1 flex flex-col gap-4 justify-start">
-             <DashboardAction 
-                variant="success" 
-                label="Entradas" 
-                onClick={() => handleOpenModal('ENTRADA')} 
-             />
+          {/* Right Column (1/3): Actions & Accounts */}
+          <div className="lg:col-span-1 flex flex-col gap-6">
+              {/* Actions */}
+              <div className="flex flex-col gap-4">
+                 <DashboardAction 
+                    variant="success" 
+                    label="Entradas" 
+                    onClick={() => handleOpenModal('ENTRADA')} 
+                 />
 
-             <DashboardAction 
-                variant="primary" 
-                label="Movimentações" 
-                onClick={() => handleOpenModal('MOVIMENTACAO')} 
-             />
+                 <DashboardAction 
+                    variant="primary" 
+                    label="Movimentações" 
+                    onClick={() => handleOpenModal('MOVIMENTACAO')} 
+                 />
 
-             <DashboardAction 
-                variant="danger" 
-                label="Saídas" 
-                onClick={() => handleOpenModal('SAIDA')} 
-             />
+                 <DashboardAction 
+                    variant="danger" 
+                    label="Saídas" 
+                    onClick={() => handleOpenModal('SAIDA')} 
+                 />
+              </div>
 
-             <DashboardAction 
-                variant="info" 
-                label="Gasto no Cartão" 
-                onClick={() => handleOpenModal('CARTAO')} 
-             />
-          </div>
-        </div>
-
-        {/* Row 3: Transactions & Accounts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Transactions List (2/3) */}
-            <div className="lg:col-span-2">
-                <Card className="p-6 bg-brand-card rounded-2xl border border-brand-border/30 shadow-lg min-h-[300px]">
-                    <div className="flex justify-between items-center mb-6">
-                        <PageTitle level={2} className="text-xl font-bold text-white">Transações Recentes</PageTitle>
-                        <button 
-                            onClick={() => navigate('/transactions')}
-                            className="text-sm text-brand-primary hover:text-brand-primary-hover transition-colors cursor-pointer"
-                        >
-                            Ver todas
-                        </button>
-                    </div>
-                    <TransactionList 
-                        transactions={allTransactions.slice(0, 4)} 
-                        onEdit={(t) => {
-                            setTransactionToEdit(t);
-                            setTransactionModalOpen(true);
-                        }}
-                        onDelete={async (t) => {
-                            if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
-                                try {
-                                    await api.delete(`/transactions/${t.id}`);
-                                    fetchAllData();
-                                } catch (error) {
-                                    console.error("Error deleting transaction", error);
-                                }
-                            }
-                        }}
-                    />
-                </Card>
-            </div>
-
-            {/* Accounts List (1/3) */}
-            <div className="lg:col-span-1">
-                <Card className="p-6 bg-brand-card rounded-2xl border border-brand-border/30 shadow-lg min-h-[300px]">
+               {/* Accounts List */}
+                <Card className="p-6 bg-brand-card rounded-2xl border border-brand-border/30 shadow-lg flex-1">
                     <div className="flex justify-between items-center mb-6">
                         <PageTitle 
                           level={2} 
@@ -258,7 +264,7 @@ function DashboardPage() {
                         <PlusCircle size={24} />
                         </button>
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[220px] overflow-y-auto pr-2">
                         {accounts.length > 0 ? accounts.map(account => (
                         <div 
                           key={account.id} 
@@ -276,7 +282,39 @@ function DashboardPage() {
                         )) : <p className="text-gray-400 text-center py-4">Nenhuma conta encontrada.</p>}
                     </div>
                 </Card>
-            </div>
+          </div>
+        </div>
+
+        {/* Row 3: Transactions Full Width */}
+        <div className="grid grid-cols-1">
+            <Card className="p-6 bg-brand-card rounded-2xl border border-brand-border/30 shadow-lg min-h-[300px]">
+                <div className="flex justify-between items-center mb-6">
+                    <PageTitle level={2} className="text-xl font-bold text-white">Transações Recentes</PageTitle>
+                    <button 
+                        onClick={() => navigate('/transactions')}
+                        className="text-sm text-brand-primary hover:text-brand-primary-hover transition-colors cursor-pointer"
+                    >
+                        Ver todas
+                    </button>
+                </div>
+                <TransactionList 
+                    transactions={allTransactions.slice(0, 5)} 
+                    onEdit={(t) => {
+                        setTransactionToEdit(t);
+                        setTransactionModalOpen(true);
+                    }}
+                    onDelete={async (t) => {
+                        if (window.confirm('Tem certeza que deseja excluir esta transação?')) {
+                            try {
+                                await api.delete(`/transactions/${t.id}`);
+                                fetchAllData();
+                            } catch (error) {
+                                console.error("Error deleting transaction", error);
+                            }
+                        }
+                    }}
+                />
+            </Card>
         </div>
 
       </div>

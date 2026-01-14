@@ -1,12 +1,12 @@
     import { useState, useCallback } from 'react';
 
-export const useTransactionFilters = () => {
+export const useTransactionFilters = (initialFilters = {}) => {
     const [filters, setFilters] = useState({
-        name: '',
-        startDate: '',
-        endDate: '',
-        categoryId: '',
-        transactionType: ''
+        name: initialFilters.name || '',
+        startDate: initialFilters.startDate || '',
+        endDate: initialFilters.endDate || '',
+        categoryId: initialFilters.categoryId || '',
+        transactionType: initialFilters.transactionType || ''
     });
 
     const handleChange = useCallback((field, value) => {

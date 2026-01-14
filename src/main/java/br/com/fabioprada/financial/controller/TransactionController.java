@@ -12,6 +12,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.ByteArrayInputStream;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -69,6 +74,34 @@ public class TransactionController {
     @PostMapping("/delete-multiple")
     public ResponseEntity<?> deleteMultiple(@RequestBody List<Long> ids) {
         transactionService.deleteMultiple(ids);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<InputStreamResource> export(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String transactionType) {
+
+        ByteArrayInputStream in = transactionService.exportTransactions(name, startDate, endDate, categoryId,
+                transactionType);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=transacoes.xlsx");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(
+                        MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(in));
+    }
+
+    @PostMapping("/import")
+    public ResponseEntity<?> importTransactions(@RequestParam("file") MultipartFile file) {
+        transactionService.importTransactions(file);
         return ResponseEntity.ok().build();
     }
 }

@@ -40,9 +40,12 @@ public class DashboardService {
             if (userId != null) {
                 LocalDate today = LocalDate.now();
                 YearMonth currentMonth = YearMonth.from(today);
+                YearMonth previousMonth2 = currentMonth.minusMonths(2);
                 YearMonth previousMonth = currentMonth.minusMonths(1);
                 YearMonth nextMonth = currentMonth.plusMonths(1);
 
+                MonthSummaryDTO previousMonth2Summary = createSummaryForMonth(previousMonth2,
+                        Objects.requireNonNull(userId));
                 MonthSummaryDTO previousMonthSummary = createSummaryForMonth(previousMonth,
                         Objects.requireNonNull(userId));
                 MonthSummaryDTO currentMonthSummary = createSummaryForMonth(currentMonth,
@@ -50,6 +53,7 @@ public class DashboardService {
                 MonthSummaryDTO nextMonthSummary = createSummaryForMonth(nextMonth, Objects.requireNonNull(userId));
 
                 return Map.of(
+                        "previous2", previousMonth2Summary,
                         "previous", previousMonthSummary,
                         "current", currentMonthSummary,
                         "next", nextMonthSummary);

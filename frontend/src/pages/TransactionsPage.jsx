@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useCrud } from '../hooks/useCrud';
 import { useTransactionFilters } from '../hooks/useTransactionFilters';
 import { useToast } from '../hooks/useToast';
@@ -11,24 +12,46 @@ import MonthlyPlanningPage from './MonthlyPlanningPage';
 import TransactionFilters from '../components/transactions/TransactionFilters';
 import TransactionTable from '../components/transactions/TransactionTable';
 import { formatCurrency } from '../utils/dateUtils';
+import api from '../services/api';
 
 function TransactionsPage() {
     const { items: transactions, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems, pagination } = useCrud('/transactions');
     const { items: categories, fetchItems: fetchCategories } = useCrud('/categories');
     const { items: accounts, fetchItems: fetchAccounts } = useCrud('/accounts');
     
-    const { filters, handleChange, clearFilters, getFilterParams } = useTransactionFilters();
-    const { addToast } = useToast();
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [selectedTransactions, setSelectedTransactions] = useState(new Set());
-    const [activeTab, setActiveTab] = useState('transactions'); // 'transactions' or 'planning'
+    
+    const location = useLocation();
+    const initialActiveTab = location.state?.activeTab || 'transactions';
+
+    const [activeTab, setActiveTab] = useState(initialActiveTab); // 'transactions' or 'planning'
+    
+    const initialFilters = useMemo(() => {
+        if (location.state && location.state.activeTab === 'transactions' && location.state.startDate && location.state.endDate) {
+            return {
+                startDate: location.state.startDate,
+                endDate: location.state.endDate
+            };
+        }
+        return {};
+    }, [location.state]);
+
+    const { filters, handleChange, clearFilters, getFilterParams } = useTransactionFilters(initialFilters);
+    const { addToast } = useToast();
     
     // Pagination states
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [jumpToPage, setJumpToPage] = useState('');
+
+    useEffect(() => {
+        fetchCategories();
+        fetchAccounts();
+        const params = getFilterParams();
+        fetchItems({ ...params, page, size: pageSize }); 
+    }, [fetchCategories, fetchAccounts, fetchItems, page, pageSize, getFilterParams]);
 
     const handleJumpToPage = (e) => {
         if (e.key === 'Enter' || e.type === 'blur') {
@@ -118,6 +141,55 @@ function TransactionsPage() {
         }, 0);
     }, [transactions]);
 
+    const handleExport = async () => {
+        try {
+            const response = await api.get('/transactions/export', {
+                params: getFilterParams(),
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'transacoes.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            addToast({ type: 'success', title: 'Exportação', message: 'Download iniciado!' });
+        } catch (error) {
+            console.error(error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao exportar transações.' });
+        }
+    };
+
+    const handleImport = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            await api.post('/transactions/import', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            addToast({ type: 'success', title: 'Importação', message: 'Transações importadas com sucesso!' });
+            handleApplyFilters();
+            fetchCategories(); // Refresh in case new categories were created
+            fetchAccounts(); // Refresh in case new accounts were created
+        } catch (error) {
+            console.error(error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao importar transações.' });
+        }
+        e.target.value = '';
+    };
+
+    const handleFilterChange = (field, value) => {
+        handleChange(field, value);
+        setPage(0);
+    };
+
     return (
         <div className="container mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -145,11 +217,29 @@ function TransactionsPage() {
                         </Button>
                     )}
                     {activeTab === 'transactions' && (
-                        <Button 
-                            variant="success"
-                            onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}>
-                            + Nova Transação
-                        </Button>
+                        <>
+                            <Button 
+                                variant="secondary"
+                                onClick={handleExport}>
+                                Exportar
+                            </Button>
+                            <label className="cursor-pointer">
+                                <input 
+                                    type="file" 
+                                    accept=".xlsx, .xls"
+                                    className="hidden"
+                                    onChange={handleImport}
+                                />
+                                <span className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-9 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100">
+                                    Importar
+                                </span>
+                            </label>
+                            <Button 
+                                variant="success"
+                                onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}>
+                                + Nova Transação
+                            </Button>
+                        </>
                     )}
                 </div>
             </div>
@@ -157,8 +247,7 @@ function TransactionsPage() {
             {activeTab === 'transactions' && (
                 <TransactionFilters 
                     filters={filters}
-                    onChange={handleChange}
-                    onApply={handleApplyFilters}
+                    onChange={handleFilterChange}
                     onClear={handleClearFilters}
                     categories={categories}
                 />
@@ -175,7 +264,15 @@ function TransactionsPage() {
                     error={error}
                 />
             ) : (
-                <MonthlyPlanningPage categories={categories} />
+                <MonthlyPlanningPage 
+                    categories={categories} 
+                    initialFilters={
+                        location.state?.activeTab === 'planning' ? {
+                            month: location.state.planningMonth,
+                            year: location.state.planningYear
+                        } : null
+                    }
+                />
             )}
 
             {activeTab === 'transactions' && pagination && (
