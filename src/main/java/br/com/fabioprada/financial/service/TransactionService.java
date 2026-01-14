@@ -20,6 +20,14 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.web.multipart.MultipartFile;
+import br.com.fabioprada.financial.repository.CategoryRepository;
+import br.com.fabioprada.financial.repository.AccountRepository;
+import br.com.fabioprada.financial.model.Category;
+import br.com.fabioprada.financial.model.Account;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 @Service
 @SuppressWarnings("null")
@@ -27,43 +35,130 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final UserContextService userContextService;
+    private final ExcelService excelService;
+    private final CategoryRepository categoryRepository;
+    private final AccountRepository accountRepository;
 
-    public TransactionService(TransactionRepository transactionRepository, UserContextService userContextService) {
+    public TransactionService(TransactionRepository transactionRepository, UserContextService userContextService,
+            ExcelService excelService,
+            CategoryRepository categoryRepository, AccountRepository accountRepository) {
         this.transactionRepository = transactionRepository;
         this.userContextService = userContextService;
+        this.excelService = excelService;
+        this.categoryRepository = categoryRepository;
+        this.accountRepository = accountRepository;
     }
 
     public Page<Transaction> searchTransactions(String name, LocalDate startDate, LocalDate endDate, Long categoryId,
             String transactionType, Pageable pageable) {
         return userContextService.getCurrentUser().map(user -> {
-            Long userId = user.getId();
-            return transactionRepository
-                    .findAll((Root<Transaction> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
-                        List<Predicate> predicates = new ArrayList<>();
-                        predicates.add(cb.equal(root.get("user").get("id"), userId));
-                        if (name != null && !name.isEmpty()) {
-                            predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
-                        }
-                        if (startDate != null) {
-                            predicates.add(cb.greaterThanOrEqualTo(root.get("creationDate"), startDate));
-                        }
-                        if (endDate != null) {
-                            predicates.add(cb.lessThanOrEqualTo(root.get("creationDate"), endDate));
-                        }
-                        if (categoryId != null) {
-                            predicates.add(cb.equal(root.get("category").get("id"), categoryId));
-                        }
-                        if (transactionType != null && !transactionType.isEmpty()) {
-                            try {
-                                predicates.add(cb.equal(root.get("transactionType"),
-                                        TransactionType.valueOf(transactionType)));
-                            } catch (IllegalArgumentException e) {
-                                // Log invalid type if needed
-                            }
-                        }
-                        return cb.and(predicates.toArray(new Predicate[0]));
-                    }, pageable);
+            Specification<Transaction> spec = createSpecification(user.getId(), name, startDate, endDate, categoryId,
+                    transactionType);
+            return transactionRepository.findAll(spec, pageable);
         }).orElse(Page.empty());
+    }
+
+    private Specification<Transaction> createSpecification(Long userId, String name, LocalDate startDate,
+            LocalDate endDate, Long categoryId, String transactionType) {
+        return (Root<Transaction> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("user").get("id"), userId));
+            if (name != null && !name.isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%"));
+            }
+            if (startDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("creationDate"), startDate));
+            }
+            if (endDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("creationDate"), endDate));
+            }
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+            if (transactionType != null && !transactionType.isEmpty()) {
+                try {
+                    predicates.add(cb.equal(root.get("transactionType"),
+                            TransactionType.valueOf(transactionType)));
+                } catch (IllegalArgumentException e) {
+                    // Log invalid type if needed
+                }
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    public ByteArrayInputStream exportTransactions(String name, LocalDate startDate, LocalDate endDate, Long categoryId,
+            String transactionType) {
+        User user = userContextService.getCurrentUserOrThrow();
+        Specification<Transaction> spec = createSpecification(user.getId(), name, startDate, endDate, categoryId,
+                transactionType);
+        List<Transaction> transactions = transactionRepository.findAll(spec);
+        return excelService.transactionsToExcel(transactions);
+    }
+
+    @Transactional
+    public void importTransactions(MultipartFile file) {
+        try {
+            User user = userContextService.getCurrentUserOrThrow();
+            List<Transaction> transactions = excelService.excelToTransactions(file.getInputStream());
+
+            for (Transaction transaction : transactions) {
+                transaction.setUser(user);
+
+                // Handle Category
+                if (transaction.getCategory() != null && transaction.getCategory().getName() != null) {
+                    String categoryName = transaction.getCategory().getName();
+                    Category category = categoryRepository.findByNameAndUserId(categoryName, user.getId())
+                            .orElseGet(() -> {
+                                Category newCategory = new Category();
+                                newCategory.setName(categoryName);
+                                newCategory.setUser(user);
+                                return categoryRepository.save(newCategory);
+                            });
+                    transaction.setCategory(category);
+                }
+
+                // Handle Out Account
+                if (transaction.getOutAccount() != null && transaction.getOutAccount().getName() != null) {
+                    String accountName = transaction.getOutAccount().getName();
+                    Account account = accountRepository.findByNameAndUserId(accountName, user.getId())
+                            .orElseGet(() -> {
+                                Account newAccount = new Account();
+                                newAccount.setName(accountName);
+                                newAccount.setUser(user);
+                                newAccount.setInitialBalance(BigDecimal.ZERO);
+                                newAccount.setCurrentBalance(BigDecimal.ZERO); // PrePersist handles initial but good to
+                                                                               // be explicit or let PrePersist work
+                                return accountRepository.save(newAccount);
+                            });
+                    transaction.setOutAccount(account);
+                }
+
+                // Handle In Account
+                if (transaction.getInAccount() != null && transaction.getInAccount().getName() != null) {
+                    String accountName = transaction.getInAccount().getName();
+                    Account account = accountRepository.findByNameAndUserId(accountName, user.getId())
+                            .orElseGet(() -> {
+                                Account newAccount = new Account();
+                                newAccount.setName(accountName);
+                                newAccount.setUser(user);
+                                newAccount.setInitialBalance(BigDecimal.ZERO);
+                                newAccount.setCurrentBalance(BigDecimal.ZERO);
+                                return accountRepository.save(newAccount);
+                            });
+                    transaction.setInAccount(account);
+                }
+
+                // If it's a transfer, ensure both accounts are set?
+                // The prompt says "import transactions... if account/category not added, create
+                // default".
+                // I'll assume valid data structure.
+
+                save(transaction);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("fail to store excel data: " + e.getMessage());
+        }
     }
 
     public List<Transaction> findAllByUserId() {

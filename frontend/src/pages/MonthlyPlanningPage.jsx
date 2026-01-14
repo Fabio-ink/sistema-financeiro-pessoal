@@ -12,7 +12,7 @@ import { Plus, Filter, Trash2 } from 'lucide-react';
 
 import Select from '../components/ui/Select';
 
-function MonthlyPlanningPage({ categories }) {
+function MonthlyPlanningPage({ categories, initialFilters }) {
     const { items: planningEntries, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems, pagination } = useCrud('/monthly-planning');
     
     // Modal states
@@ -22,8 +22,8 @@ function MonthlyPlanningPage({ categories }) {
 
     // Filter state
     const [filters, setFilters] = useState({
-        month: '',
-        year: '',
+        month: initialFilters?.month || '',
+        year: initialFilters?.year || '',
         category: ''
     });
 

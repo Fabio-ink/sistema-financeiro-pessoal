@@ -113,7 +113,7 @@ const TransactionChart = ({ transactions }) => {
                     <button
                         key={range}
                         onClick={() => setTimeRange(range)}
-                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                        className={`px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                             timeRange === range
                                 ? 'bg-brand-primary text-white'
                                 : 'bg-brand-card border border-brand-border/50 text-gray-400 hover:text-white hover:border-brand-primary/50'
