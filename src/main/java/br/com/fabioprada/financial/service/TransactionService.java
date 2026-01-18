@@ -30,7 +30,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 @Service
-@SuppressWarnings("null")
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
@@ -38,15 +37,18 @@ public class TransactionService {
     private final ExcelService excelService;
     private final CategoryRepository categoryRepository;
     private final AccountRepository accountRepository;
+    private final br.com.fabioprada.financial.repository.MonthlyPlanningRepository monthlyPlanningRepository;
 
     public TransactionService(TransactionRepository transactionRepository, UserContextService userContextService,
             ExcelService excelService,
-            CategoryRepository categoryRepository, AccountRepository accountRepository) {
+            CategoryRepository categoryRepository, AccountRepository accountRepository,
+            br.com.fabioprada.financial.repository.MonthlyPlanningRepository monthlyPlanningRepository) {
         this.transactionRepository = transactionRepository;
         this.userContextService = userContextService;
         this.excelService = excelService;
         this.categoryRepository = categoryRepository;
         this.accountRepository = accountRepository;
+        this.monthlyPlanningRepository = monthlyPlanningRepository;
     }
 
     public Page<Transaction> searchTransactions(String name, LocalDate startDate, LocalDate endDate, Long categoryId,
@@ -90,18 +92,29 @@ public class TransactionService {
     public ByteArrayInputStream exportTransactions(String name, LocalDate startDate, LocalDate endDate, Long categoryId,
             String transactionType) {
         User user = userContextService.getCurrentUserOrThrow();
+
+        // Fetch Transactions
         Specification<Transaction> spec = createSpecification(user.getId(), name, startDate, endDate, categoryId,
                 transactionType);
         List<Transaction> transactions = transactionRepository.findAll(spec);
-        return excelService.transactionsToExcel(transactions);
+
+        // Fetch All Monthly Plannings for the user (could filter by date range if
+        // needed, but for now export all)
+        List<br.com.fabioprada.financial.model.MonthlyPlanning> plannings = monthlyPlanningRepository
+                .findAllByUserId(user.getId());
+
+        return excelService.exportToExcel(transactions, plannings);
     }
 
     @Transactional
     public void importTransactions(MultipartFile file) {
         try {
             User user = userContextService.getCurrentUserOrThrow();
-            List<Transaction> transactions = excelService.excelToTransactions(file.getInputStream());
+            br.com.fabioprada.financial.dto.ImportDataDTO data = excelService.importData(file.getInputStream());
+            List<Transaction> transactions = data.getTransactions();
+            List<br.com.fabioprada.financial.model.MonthlyPlanning> plannings = data.getMonthlyPlannings();
 
+            // --- Save Transactions ---
             for (Transaction transaction : transactions) {
                 transaction.setUser(user);
 
@@ -127,8 +140,7 @@ public class TransactionService {
                                 newAccount.setName(accountName);
                                 newAccount.setUser(user);
                                 newAccount.setInitialBalance(BigDecimal.ZERO);
-                                newAccount.setCurrentBalance(BigDecimal.ZERO); // PrePersist handles initial but good to
-                                                                               // be explicit or let PrePersist work
+                                newAccount.setCurrentBalance(BigDecimal.ZERO);
                                 return accountRepository.save(newAccount);
                             });
                     transaction.setOutAccount(account);
@@ -149,13 +161,29 @@ public class TransactionService {
                     transaction.setInAccount(account);
                 }
 
-                // If it's a transfer, ensure both accounts are set?
-                // The prompt says "import transactions... if account/category not added, create
-                // default".
-                // I'll assume valid data structure.
-
                 save(transaction);
             }
+
+            // --- Save Monthly Plannings ---
+            for (br.com.fabioprada.financial.model.MonthlyPlanning planning : plannings) {
+                planning.setUser(user);
+
+                // Handle Category
+                if (planning.getCategory() != null && planning.getCategory().getName() != null) {
+                    String categoryName = planning.getCategory().getName();
+                    Category category = categoryRepository.findByNameAndUserId(categoryName, user.getId())
+                            .orElseGet(() -> {
+                                Category newCategory = new Category();
+                                newCategory.setName(categoryName);
+                                newCategory.setUser(user);
+                                return categoryRepository.save(newCategory);
+                            });
+                    planning.setCategory(category);
+                }
+
+                monthlyPlanningRepository.save(planning);
+            }
+
         } catch (IOException e) {
             throw new RuntimeException("fail to store excel data: " + e.getMessage());
         }
