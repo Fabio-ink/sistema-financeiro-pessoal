@@ -18,7 +18,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 @Service
 @Transactional
-@SuppressWarnings("null")
 public class MonthlyPlanningService {
 
     private final MonthlyPlanningRepository monthlyPlanningRepository;

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-@SuppressWarnings("null")
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;

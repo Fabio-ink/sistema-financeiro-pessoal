@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@SuppressWarnings("null")
 public class AccountService {
 
     private final AccountRepository accountRepository;

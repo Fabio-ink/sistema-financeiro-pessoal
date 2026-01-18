@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
-@SuppressWarnings("null")
 public class DashboardService {
 
     private final TransactionRepository transactionRepository;
