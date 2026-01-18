@@ -2,7 +2,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-COPY tailwind.config.js postcss.config.js vite.config.js ./
+COPY vite.config.js ./
 
 RUN npm install
 COPY . .

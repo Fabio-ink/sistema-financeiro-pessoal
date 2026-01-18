@@ -13,7 +13,7 @@ services:
 
   # --- Serviço do Banco de Dados ---
   database:
-    image: postgres:latest
+    image: postgres:16
     container_name: financeiro_db
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
