@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 
 @Entity
+@Table(name = "monthly_planning", indexes = {
+        @Index(name = "idx_planning_user_date", columnList = "user_id, year, month")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
