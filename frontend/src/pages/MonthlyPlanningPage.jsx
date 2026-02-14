@@ -12,9 +12,9 @@ import { Plus, Filter, Trash2 } from 'lucide-react';
 
 import Select from '../components/ui/Select';
 
-function MonthlyPlanningPage({ categories, initialFilters }) {
+function MonthlyPlanningPage({ categories, initialFilters, onNavigateToTransactions }) {
     const { items: planningEntries, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems, pagination } = useCrud('/monthly-planning');
-    
+
     // Modal states
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -51,7 +51,7 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
                 setJumpToPage('');
             } else if (jumpToPage !== '') {
                 // Optional: show error or reset
-                setJumpToPage(''); 
+                setJumpToPage('');
             }
         }
     };
@@ -85,7 +85,7 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
         }
     };
 
-    const isAllSelected = useMemo(() => 
+    const isAllSelected = useMemo(() =>
         planningEntries.length > 0 && selectedPlanningEntries.size === planningEntries.length,
         [selectedPlanningEntries.size, planningEntries.length]
     );
@@ -149,16 +149,16 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <PageTitle>Planejamento Mensal</PageTitle>
                 <div className="flex gap-3 w-full md:w-auto">
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         onClick={() => setIsFilterModalOpen(true)}
                         className="flex items-center gap-2 flex-1 md:flex-none justify-center"
                     >
                         <Filter size={18} />
                         Filtrar
                     </Button>
-                    <Button 
-                        variant="primary" 
+                    <Button
+                        variant="primary"
                         onClick={handleOpenCreateModal}
                         className="flex items-center gap-2 flex-1 md:flex-none justify-center shadow-lg shadow-brand-primary/20"
                     >
@@ -174,7 +174,7 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
                         <span className="text-red-200 font-medium pl-2">
                             {selectedPlanningEntries.size} item(s) selecionado(s)
                         </span>
-                        <Button 
+                        <Button
                             variant="danger"
                             size="sm"
                             onClick={handleDeleteSelected}
@@ -197,10 +197,10 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
                 <div className="space-y-4">
                     {planningEntries.length > 0 && (
                         <div className="flex items-center justify-end px-2 mb-2">
-                            <Checkbox 
+                            <Checkbox
                                 id="selectAllPlanningEntries"
-                                checked={isAllSelected} 
-                                onChange={handleSelectAll} 
+                                checked={isAllSelected}
+                                onChange={handleSelectAll}
                                 label="Selecionar Todos"
                             />
                         </div>
@@ -216,71 +216,90 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
                                 const isOverBudget = spent > planned;
 
                                 return (
-                                <Card key={entry.id} className={`group transition-all duration-200 hover:border-brand-primary/30 ${selectedPlanningEntries.has(entry.id) ? 'bg-brand-primary/5 border-brand-primary/30' : ''}`}>
-                                    <div className="p-5">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-4">
-                                                <Checkbox 
-                                                    id={`planningEntry-${entry.id}`}
-                                                    checked={selectedPlanningEntries.has(entry.id)} 
-                                                    onChange={() => handleSelect(entry.id)} 
-                                                />
+                                    <Card
+                                        key={entry.id}
+                                        className={`group transition-all duration-200 hover:border-brand-primary/30 ${selectedPlanningEntries.has(entry.id) ? 'bg-brand-primary/5 border-brand-primary/30' : ''}`}
+                                    >
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-4">
+                                                    <Checkbox
+                                                        id={`planningEntry-${entry.id}`}
+                                                        checked={selectedPlanningEntries.has(entry.id)}
+                                                        onChange={() => handleSelect(entry.id)}
+                                                    />
+                                                    <div
+                                                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                                                        onClick={() => {
+                                                            if (onNavigateToTransactions) {
+                                                                onNavigateToTransactions(entry.month, entry.year, entry.category?.id);
+                                                            }
+                                                        }}
+                                                        title="Ver transações relacionadas"
+                                                    >
+                                                        <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                                                            {entry.category?.name || 'Geral'}
+                                                            <span className="text-xs font-normal text-gray-400 bg-brand-surface-light px-2 py-0.5 rounded-full border border-brand-border">
+                                                                {getMonthName(entry.month)} {entry.year}
+                                                            </span>
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    onClick={() => handleOpenEditModal(entry)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    Editar
+                                                </Button>
+                                            </div>
+
+                                            <div
+                                                className="grid grid-cols-3 gap-8 mb-4 cursor-pointer"
+                                                onClick={() => {
+                                                    if (onNavigateToTransactions) {
+                                                        onNavigateToTransactions(entry.month, entry.year, entry.category?.id);
+                                                    }
+                                                }}
+                                                title="Ver transações relacionadas"
+                                            >
                                                 <div>
-                                                    <h3 className="font-bold text-lg text-white flex items-center gap-2">
-                                                        {entry.category?.name || 'Geral'}
-                                                        <span className="text-xs font-normal text-gray-400 bg-brand-surface-light px-2 py-0.5 rounded-full border border-brand-border">
-                                                            {getMonthName(entry.month)} {entry.year}
-                                                        </span>
-                                                    </h3>
+                                                    <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Gasto</p>
+                                                    <p className={`font-mono font-bold text-lg ${isOverBudget ? 'text-red-400' : 'text-white'}`}>
+                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(spent)}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Planejado</p>
+                                                    <p className="font-mono font-bold text-lg text-white">
+                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(planned)}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Restante</p>
+                                                    <p className={`font-mono font-bold text-lg ${remaining < 0 ? 'text-red-400' : 'text-brand-success'}`}>
+                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(remaining)}
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <Button 
-                                                onClick={() => handleOpenEditModal(entry)} 
-                                                variant="ghost" 
-                                                size="sm"
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                Editar
-                                            </Button>
-                                        </div>
 
-                                        <div className="grid grid-cols-3 gap-8 mb-4">
-                                            <div>
-                                                <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Gasto</p>
-                                                <p className={`font-mono font-bold text-lg ${isOverBudget ? 'text-red-400' : 'text-white'}`}>
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(spent)}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Planejado</p>
-                                                <p className="font-mono font-bold text-lg text-white">
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(planned)}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Restante</p>
-                                                <p className={`font-mono font-bold text-lg ${remaining < 0 ? 'text-red-400' : 'text-brand-success'}`}>
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(remaining)}
-                                                </p>
+                                            <div className="relative pt-2">
+                                                <div className="flex justify-between text-xs mb-2">
+                                                    <span className="text-gray-400 font-medium">Progresso</span>
+                                                    <span className={`font-mono font-bold ${isOverBudget ? 'text-red-400' : 'text-brand-primary'}`}>
+                                                        {percentage.toFixed(0)}%
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-brand-surface-light rounded-full h-2 overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-500 ease-out ${isOverBudget ? 'bg-red-500' : 'bg-brand-primary'}`}
+                                                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                                                    ></div>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <div className="relative pt-2">
-                                            <div className="flex justify-between text-xs mb-2">
-                                                <span className="text-gray-400 font-medium">Progresso</span>
-                                                <span className={`font-mono font-bold ${isOverBudget ? 'text-red-400' : 'text-brand-primary'}`}>
-                                                    {percentage.toFixed(0)}%
-                                                </span>
-                                            </div>
-                                            <div className="w-full bg-brand-surface-light rounded-full h-2 overflow-hidden">
-                                                <div 
-                                                    className={`h-full rounded-full transition-all duration-500 ease-out ${isOverBudget ? 'bg-red-500' : 'bg-brand-primary'}`} 
-                                                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
+                                    </Card>
                                 );
                             })}
                         </div>
@@ -319,10 +338,10 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
 
                     <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
                         <div className="flex items-center mr-4 gap-2">
-                             <span className="text-sm text-gray-400">Ir para:</span>
-                             <input 
-                                type="number" 
-                                min="1" 
+                            <span className="text-sm text-gray-400">Ir para:</span>
+                            <input
+                                type="number"
+                                min="1"
                                 max={pagination.totalPages}
                                 value={jumpToPage}
                                 onChange={(e) => setJumpToPage(e.target.value)}
@@ -330,7 +349,7 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
                                 onBlur={handleJumpToPage}
                                 className="w-16 px-2 py-1 text-sm bg-brand-dark border border-brand-border rounded text-white focus:border-brand-primary outline-none"
                                 placeholder="#"
-                             />
+                            />
                         </div>
                         <span className="text-sm text-gray-400 mr-2">
                             Página {pagination.number + 1} de {pagination.totalPages}
@@ -357,7 +376,7 @@ function MonthlyPlanningPage({ categories, initialFilters }) {
                 </div>
             )}
 
-            <MonthlyPlanningFormModal 
+            <MonthlyPlanningFormModal
                 isOpen={isFormModalOpen}
                 onClose={() => setIsFormModalOpen(false)}
                 onSubmit={handleSubmit}

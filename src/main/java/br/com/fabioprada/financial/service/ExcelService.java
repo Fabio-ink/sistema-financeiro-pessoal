@@ -103,41 +103,60 @@ public class ExcelService {
             Workbook workbook = new XSSFWorkbook(is);
 
             // --- Import Transactions ---
-            Sheet transSheet = workbook.getSheet(TRANSACTIONS_SHEET);
-            System.out.println("Looking for Transactions sheet: " + TRANSACTIONS_SHEET);
-            if (transSheet == null) {
-                System.out.println("Transactions sheet not found by name. Checking first sheet.");
-                // Fallback: Check if it's the first sheet and looks like transactions (has
-                // Name/Date/Amount columns)
-                // Or simply default to first sheet if name doesn't match, legacy support
-                Sheet firstSheet = workbook.getSheetAt(0);
-                // Simple heuristic: if sheet names don't match standard, assume first is
-                // transactions
-                if (!PLANNING_SHEET.equals(firstSheet.getSheetName())) {
-                    transSheet = firstSheet;
-                    System.out.println("Using first sheet as Transactions: " + firstSheet.getSheetName());
+            Sheet transSheet = null;
+            // First try finding by name
+            Sheet sheetByName = workbook.getSheet(TRANSACTIONS_SHEET);
+            if (sheetByName != null && isTransactionSheet(sheetByName)) {
+                transSheet = sheetByName;
+            } else {
+                // Iterate through sheets to find one that matches structure
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    Sheet s = workbook.getSheetAt(i);
+                    if (isTransactionSheet(s)) {
+                        transSheet = s;
+                        break;
+                    }
                 }
             }
 
             if (transSheet != null) {
+                System.out.println("Processing transactions from sheet: " + transSheet.getSheetName());
                 transactions = parseTransactions(transSheet);
                 System.out.println("Parsed " + transactions.size() + " transactions.");
             } else {
-                System.out.println("No Transactions sheet found to parse.");
+                System.out.println("No valid Transactions sheet found.");
             }
 
             // --- Import Planning ---
-            Sheet planSheet = workbook.getSheet(PLANNING_SHEET);
-            System.out.println("Looking for Planning sheet: " + PLANNING_SHEET);
+            Sheet planSheet = null;
+            // First try finding by name
+            sheetByName = workbook.getSheet(PLANNING_SHEET);
+            if (sheetByName != null && isPlanningSheet(sheetByName)) {
+                planSheet = sheetByName;
+            } else {
+                // Iterate through sheets to find one that matches structure
+                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                    Sheet s = workbook.getSheetAt(i);
+                    // Avoid re-processing the same sheet if it was already identified as
+                    // transactions
+                    // strictly speaking we could have a sheet that satisfies both if headers
+                    // overlap, but unlikely here.
+                    if (s == transSheet)
+                        continue;
+
+                    if (isPlanningSheet(s)) {
+                        planSheet = s;
+                        break;
+                    }
+                }
+            }
+
             if (planSheet != null) {
+                System.out.println("Processing planning from sheet: " + planSheet.getSheetName());
                 plannings = parsePlanning(planSheet);
                 System.out.println("Parsed " + plannings.size() + " planning items.");
             } else {
-                System.out.println("Planning sheet '" + PLANNING_SHEET + "' NOT found in workbook. Available sheets: "
-                        + workbook.getNumberOfSheets());
-                for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-                    System.out.println(" - Sheet " + i + ": " + workbook.getSheetName(i));
-                }
+                System.out.println("No valid Planning sheet found.");
             }
 
             workbook.close();
@@ -151,6 +170,62 @@ public class ExcelService {
         }
     }
 
+    private boolean isTransactionSheet(Sheet sheet) {
+        if (sheet == null)
+            return false;
+        Row header = sheet.getRow(0);
+        if (header == null)
+            return false;
+
+        // Check for key columns for Transactions: "Nome", "Data", "Valor", "Tipo"
+        // We look for at least a subset of critical columns to be considered a
+        // transaction sheet
+        boolean hasName = false;
+        boolean hasDate = false;
+        boolean hasAmount = false;
+
+        for (Cell cell : header) {
+            String val = getCellValueAsString(cell).trim();
+            if ("Nome".equalsIgnoreCase(val))
+                hasName = true;
+            if ("Data".equalsIgnoreCase(val))
+                hasDate = true;
+            if ("Valor".equalsIgnoreCase(val))
+                hasAmount = true;
+        }
+
+        return hasName && hasDate && hasAmount;
+    }
+
+    private boolean isPlanningSheet(Sheet sheet) {
+        if (sheet == null)
+            return false;
+        Row header = sheet.getRow(0);
+        if (header == null)
+            return false;
+
+        // Check for key columns for Planning: "Mês", "Ano", "Categoria", "Valor
+        // Estimado"
+        boolean hasMonth = false;
+        boolean hasYear = false;
+        boolean hasCategory = false;
+        boolean hasEstimated = false; // "Valor Estimado"
+
+        for (Cell cell : header) {
+            String val = getCellValueAsString(cell).trim();
+            if ("Mês".equalsIgnoreCase(val) || "Mes".equalsIgnoreCase(val))
+                hasMonth = true;
+            if ("Ano".equalsIgnoreCase(val))
+                hasYear = true;
+            if ("Categoria".equalsIgnoreCase(val))
+                hasCategory = true;
+            if ("Valor Estimado".equalsIgnoreCase(val))
+                hasEstimated = true;
+        }
+
+        return hasMonth && hasYear && hasCategory && hasEstimated;
+    }
+
     private List<Transaction> parseTransactions(Sheet sheet) {
         List<Transaction> transactions = new ArrayList<>();
         Iterator<Row> rows = sheet.iterator();
@@ -162,6 +237,10 @@ public class ExcelService {
                 continue;
             } // Skip header
 
+            // Skip empty rows
+            if (currentRow.getCell(0) == null && currentRow.getCell(2) == null)
+                continue;
+
             Transaction transaction = new Transaction();
 
             Cell nameCell = currentRow.getCell(0);
@@ -172,13 +251,13 @@ public class ExcelService {
             if (dateCell != null) {
                 String dateStr = getCellValueAsString(dateCell);
                 try {
-                    transaction.setCreationDate(LocalDate.parse(dateStr));
-                } catch (Exception e) {
                     if (dateCell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(dateCell)) {
                         transaction.setCreationDate(dateCell.getLocalDateTimeCellValue().toLocalDate());
                     } else {
                         transaction.setCreationDate(LocalDate.parse(dateStr));
                     }
+                } catch (Exception e) {
+                    // ignore date error or log
                 }
             }
 
@@ -187,13 +266,22 @@ public class ExcelService {
                 if (amountCell.getCellType() == CellType.NUMERIC) {
                     transaction.setAmount(BigDecimal.valueOf(amountCell.getNumericCellValue()));
                 } else {
-                    transaction.setAmount(new BigDecimal(getCellValueAsString(amountCell)));
+                    try {
+                        transaction.setAmount(new BigDecimal(getCellValueAsString(amountCell)));
+                    } catch (NumberFormatException e) {
+                        // ignore
+                    }
                 }
             }
 
             Cell typeCell = currentRow.getCell(3);
-            if (typeCell != null)
-                transaction.setTransactionType(TransactionType.valueOf(getCellValueAsString(typeCell)));
+            if (typeCell != null) {
+                try {
+                    transaction.setTransactionType(TransactionType.valueOf(getCellValueAsString(typeCell)));
+                } catch (IllegalArgumentException e) {
+                    // ignore
+                }
+            }
 
             Cell categoryCell = currentRow.getCell(4);
             if (categoryCell != null) {
@@ -225,7 +313,10 @@ public class ExcelService {
                 }
             }
 
-            transactions.add(transaction);
+            // Basic validation to add only fully formed transactions if needed
+            if (transaction.getName() != null && transaction.getAmount() != null) {
+                transactions.add(transaction);
+            }
         }
         return transactions;
     }
@@ -241,17 +332,29 @@ public class ExcelService {
                 continue;
             }
 
+            // Skip empty rows
+            if (currentRow.getCell(2) == null && currentRow.getCell(3) == null)
+                continue;
+
             br.com.fabioprada.financial.model.MonthlyPlanning mp = new br.com.fabioprada.financial.model.MonthlyPlanning();
 
             // Month
             Cell monthCell = currentRow.getCell(0);
-            if (monthCell != null)
-                mp.setMonth((int) Double.parseDouble(getCellValueAsString(monthCell)));
+            if (monthCell != null) {
+                try {
+                    mp.setMonth((int) Double.parseDouble(getCellValueAsString(monthCell)));
+                } catch (NumberFormatException e) {
+                }
+            }
 
             // Year
             Cell yearCell = currentRow.getCell(1);
-            if (yearCell != null)
-                mp.setYear((int) Double.parseDouble(getCellValueAsString(yearCell)));
+            if (yearCell != null) {
+                try {
+                    mp.setYear((int) Double.parseDouble(getCellValueAsString(yearCell)));
+                } catch (NumberFormatException e) {
+                }
+            }
 
             // Category
             Cell catCell = currentRow.getCell(2);
@@ -270,11 +373,16 @@ public class ExcelService {
                 if (amountCell.getCellType() == CellType.NUMERIC) {
                     mp.setEstimatedAmount(BigDecimal.valueOf(amountCell.getNumericCellValue()));
                 } else {
-                    mp.setEstimatedAmount(new BigDecimal(getCellValueAsString(amountCell)));
+                    try {
+                        mp.setEstimatedAmount(new BigDecimal(getCellValueAsString(amountCell)));
+                    } catch (NumberFormatException e) {
+                    }
                 }
             }
 
-            plannings.add(mp);
+            if (mp.getMonth() > 0 && mp.getYear() > 0 && mp.getEstimatedAmount() != null) {
+                plannings.add(mp);
+            }
         }
         return plannings;
     }

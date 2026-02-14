@@ -13,21 +13,22 @@ import TransactionFilters from '../components/transactions/TransactionFilters';
 import TransactionTable from '../components/transactions/TransactionTable';
 import { formatCurrency } from '../utils/dateUtils';
 import api from '../services/api';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 function TransactionsPage() {
     const { items: transactions, loading, error, addItem, updateItem, deleteMultipleItems, fetchItems, pagination } = useCrud('/transactions');
     const { items: categories, fetchItems: fetchCategories } = useCrud('/categories');
     const { items: accounts, fetchItems: fetchAccounts } = useCrud('/accounts');
-    
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [selectedTransactions, setSelectedTransactions] = useState(new Set());
-    
+
     const location = useLocation();
     const initialActiveTab = location.state?.activeTab || 'transactions';
 
     const [activeTab, setActiveTab] = useState(initialActiveTab); // 'transactions' or 'planning'
-    
+
     const initialFilters = useMemo(() => {
         if (location.state && location.state.activeTab === 'transactions' && location.state.startDate && location.state.endDate) {
             return {
@@ -40,7 +41,7 @@ function TransactionsPage() {
 
     const { filters, handleChange, clearFilters, getFilterParams } = useTransactionFilters(initialFilters);
     const { addToast } = useToast();
-    
+
     // Pagination states
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(10);
@@ -50,7 +51,7 @@ function TransactionsPage() {
         fetchCategories();
         fetchAccounts();
         const params = getFilterParams();
-        fetchItems({ ...params, page, size: pageSize }); 
+        fetchItems({ ...params, page, size: pageSize });
     }, [fetchCategories, fetchAccounts, fetchItems, page, pageSize, getFilterParams]);
 
     const handleJumpToPage = (e) => {
@@ -60,7 +61,7 @@ function TransactionsPage() {
                 setPage(pageNum - 1);
                 setJumpToPage('');
             } else if (jumpToPage !== '') {
-                 setJumpToPage(''); 
+                setJumpToPage('');
             }
         }
     };
@@ -69,7 +70,7 @@ function TransactionsPage() {
         fetchCategories();
         fetchAccounts();
         const params = getFilterParams();
-        fetchItems({ ...params, page, size: pageSize }); 
+        fetchItems({ ...params, page, size: pageSize });
     }, [fetchCategories, fetchAccounts, fetchItems, page, pageSize, getFilterParams]);
 
     const handleApplyFilters = () => {
@@ -196,12 +197,12 @@ function TransactionsPage() {
                 <div className="flex items-center space-x-4">
                     <PageTitle>{activeTab === 'transactions' ? 'All Transactions' : 'Monthly Planning'}</PageTitle>
                     <div className="flex items-center space-x-2">
-                        <Button 
+                        <Button
                             variant={activeTab === 'transactions' ? 'primary' : 'ghost'}
                             onClick={() => setActiveTab('transactions')}>
                             Transações
                         </Button>
-                        <Button 
+                        <Button
                             variant={activeTab === 'planning' ? 'primary' : 'ghost'}
                             onClick={() => setActiveTab('planning')}>
                             Planejamento Mensal
@@ -210,7 +211,7 @@ function TransactionsPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                     {activeTab === 'transactions' && selectedTransactions.size > 0 && (
-                        <Button 
+                        <Button
                             variant="danger"
                             onClick={handleDeleteSelected}>
                             Excluir Selecionados ({selectedTransactions.size})
@@ -218,14 +219,14 @@ function TransactionsPage() {
                     )}
                     {activeTab === 'transactions' && (
                         <>
-                            <Button 
+                            <Button
                                 variant="secondary"
                                 onClick={handleExport}>
                                 Exportar
                             </Button>
                             <label className="cursor-pointer">
-                                <input 
-                                    type="file" 
+                                <input
+                                    type="file"
                                     accept=".xlsx, .xls"
                                     className="hidden"
                                     onChange={handleImport}
@@ -234,7 +235,7 @@ function TransactionsPage() {
                                     Importar
                                 </span>
                             </label>
-                            <Button 
+                            <Button
                                 variant="success"
                                 onClick={() => { setSelectedTransaction(null); setIsModalOpen(true); }}>
                                 + Nova Transação
@@ -245,7 +246,7 @@ function TransactionsPage() {
             </div>
 
             {activeTab === 'transactions' && (
-                <TransactionFilters 
+                <TransactionFilters
                     filters={filters}
                     onChange={handleFilterChange}
                     onClear={handleClearFilters}
@@ -254,7 +255,7 @@ function TransactionsPage() {
             )}
 
             {activeTab === 'transactions' ? (
-                <TransactionTable 
+                <TransactionTable
                     transactions={transactions}
                     selectedTransactions={selectedTransactions}
                     onSelect={handleSelect}
@@ -264,14 +265,43 @@ function TransactionsPage() {
                     error={error}
                 />
             ) : (
-                <MonthlyPlanningPage 
-                    categories={categories} 
+                <MonthlyPlanningPage
+                    categories={categories}
                     initialFilters={
                         location.state?.activeTab === 'planning' ? {
                             month: location.state.planningMonth,
                             year: location.state.planningYear
                         } : null
                     }
+                    onNavigateToTransactions={(month, year, categoryId) => {
+                        // Calculate start and end date for the month
+                        const date = new Date(year, month - 1, 1);
+                        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+                        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+
+                        // Apply filters
+                        handleChange('startDate', startDate);
+                        handleChange('endDate', endDate);
+                        if (categoryId) {
+                            handleChange('categoryId', categoryId);
+                        } else {
+                            handleChange('categoryId', '');
+                        }
+
+                        // Switch tab
+                        setActiveTab('transactions');
+
+                        // Fetch items with new filters
+                        setPage(0);
+                        const params = {
+                            startDate,
+                            endDate,
+                            categoryId: categoryId || undefined,
+                            page: 0,
+                            size: pageSize
+                        };
+                        fetchItems(params);
+                    }}
                 />
             )}
 
@@ -303,10 +333,10 @@ function TransactionsPage() {
 
                     <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
                         <div className="flex items-center mr-4 gap-2">
-                             <span className="text-sm text-gray-700 dark:text-gray-300">Ir para:</span>
-                             <input 
-                                type="number" 
-                                min="1" 
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Ir para:</span>
+                            <input
+                                type="number"
+                                min="1"
                                 max={pagination.totalPages}
                                 value={jumpToPage}
                                 onChange={(e) => setJumpToPage(e.target.value)}
@@ -314,7 +344,7 @@ function TransactionsPage() {
                                 onBlur={handleJumpToPage}
                                 className="w-16 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-gray-100 focus:border-brand-primary outline-none"
                                 placeholder="#"
-                             />
+                            />
                         </div>
                         <span className="text-sm text-gray-700 dark:text-gray-300 mr-2">
                             Página {pagination.number + 1} de {pagination.totalPages}
@@ -342,10 +372,10 @@ function TransactionsPage() {
             )}
 
             <Modal isOpen={isModalOpen} onCancel={() => setIsModalOpen(false)}>
-                <TransactionForm 
-                    transaction={selectedTransaction} 
-                    onSave={handleSave} 
-                    onCancel={() => setIsModalOpen(false)} 
+                <TransactionForm
+                    transaction={selectedTransaction}
+                    onSave={handleSave}
+                    onCancel={() => setIsModalOpen(false)}
                     categories={categories}
                     accounts={accounts}
                 />
